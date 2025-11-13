@@ -1,0 +1,18 @@
+{
+  "name": "vanilla-html-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.js",
+    "dev": "npm run setup && node server.js",
+    "build": "npm run setup",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@hygraph/preview-sdk": "^0.2.5",
+    "express": "^4.18.0",
+    "node-fetch": "^3.3.0"
+  },
+  "devDependencies": {}
+}
