@@ -1,6 +1,6 @@
 {
   "name": "@hygraph/preview-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Content preview SDK for seamless real-time content editing in Hygraph CMS",
   "publishConfig": {
     "access": "public"

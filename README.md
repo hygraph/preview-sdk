@@ -108,54 +108,312 @@ Common optional attributes:
 
 ### Tagging Component Fields
 
-Use the optional `data-hygraph-component-chain` attribute when a field lives inside a modular component, repeatable component list, or union component. The attribute accepts a JSON string array describing the path from the entry to the nested field.
+Use the `data-hygraph-component-chain` attribute when a field lives inside a modular component, repeatable component list, or union component. The component chain tells Studio how to navigate from the root entry to the specific nested field.
 
-Each element in the array must contain:
-- `fieldApiId`: the API ID of the component field in your schema
-- `instanceId`: the ID returned by Hygraph for that component entry
+#### Key Concepts
 
-```html
-<!-- Component list (e.g., Recipe.ingredients[]) -->
-<span
-  data-hygraph-entry-id="cm123"
-  data-hygraph-field-api-id="quantity"
-  data-hygraph-component-chain='[
-    {"fieldApiId":"ingredients","instanceId":"ingr_01"}
-  ]'
->
-  2
-</span>
+| Attribute | Value | Purpose |
+|-----------|-------|---------|
+| `data-hygraph-entry-id` | Always the **root page/entry ID** | Identifies which Hygraph entry contains this content |
+| `data-hygraph-field-api-id` | The component field name in your schema | Identifies which field to open in the editor |
+| `data-hygraph-component-chain` | JSON array of `{fieldApiId, instanceId}` | Describes the path from root entry to the nested field |
 
-<!-- Nested component inside another component -->
-<div
-  data-hygraph-entry-id="cm123"
-  data-hygraph-field-api-id="notes"
-  data-hygraph-component-chain='[
-    {"fieldApiId":"recipeSteps","instanceId":"step_01"},
-    {"fieldApiId":"tips","instanceId":"tip_02"}
-  ]'
-></div>
+**Important:** `data-hygraph-entry-id` is always the root entry ID (e.g., page or article), even for deeply nested components. The component chain handles the navigation to nested fields—you never use the component's ID as the entry ID.
+
+#### What is `instanceId`?
+
+The `instanceId` is the unique identifier for each component instance, returned by Hygraph in your GraphQL response:
+
+```graphql
+query {
+  page(where: { id: "page_123" }) {
+    id                    # Root entry ID → use for data-hygraph-entry-id
+    title
+    contentSections {     # Modular component field
+      ... on HeroSection {
+        id                # ← This is the instanceId for the component chain
+        headline
+        subheadline
+      }
+      ... on FeatureGrid {
+        id                # ← instanceId
+        features {
+          id              # ← instanceId for nested components
+          title
+          description
+        }
+      }
+    }
+  }
+}
 ```
 
-Union components work the same way—the chain lists each component hop down to the field you want to tag. Always serialize the array with double quotes so the HTML attribute remains valid.
+#### Single-Level Components
 
-> Tip: Instead of hand-writing JSON strings, use the helpers exported from `@hygraph/preview-sdk/core`:
-> ```tsx
-> import {
->   createPreviewAttributes,
->   createComponentChainLink,
-> } from '@hygraph/preview-sdk/core';
+For a field inside a component list (e.g., `Page.contentSections[]`):
+
+```tsx
+{page.contentSections.map((section) => {
+  const chain = [
+    createComponentChainLink('contentSections', section.id)
+  ];
+
+  return (
+    <h2
+      {...createPreviewAttributes({
+        entryId: page.id,           // Always the root page ID
+        fieldApiId: 'headline',     // Field inside the component
+        componentChain: chain,
+      })}
+    >
+      {section.headline}
+    </h2>
+  );
+})}
+```
+
+The resulting HTML:
+```html
+<h2
+  data-hygraph-entry-id="page_123"
+  data-hygraph-field-api-id="headline"
+  data-hygraph-component-chain='[{"fieldApiId":"contentSections","instanceId":"section_abc"}]'
 >
-> const attributes = createPreviewAttributes({
->   entryId: recipe.id,
->   fieldApiId: 'notes',
->   componentChain: [
->     createComponentChainLink('recipeSteps', step.id),
->     createComponentChainLink('tips', tip.id),
->   ],
-> });
-> ```
-> Apply the returned attributes to your element with the JSX spread operator.
+  Welcome to Our Site
+</h2>
+```
+
+#### Deeply Nested Components
+
+For components inside other components (e.g., `Page.contentSections[].features[]`):
+
+```tsx
+{page.contentSections.map((section, sectionIndex) => (
+  <div key={section.id}>
+    {section.features?.map((feature, featureIndex) => {
+      // Build the chain: page → contentSections → features
+      const chain = [
+        createComponentChainLink('contentSections', section.id),
+        createComponentChainLink('features', feature.id)
+      ];
+
+      return (
+        <div key={feature.id}>
+          <h3
+            {...createPreviewAttributes({
+              entryId: page.id,         // Still the root page ID
+              fieldApiId: 'title',
+              componentChain: chain,
+            })}
+          >
+            {feature.title}
+          </h3>
+          <p
+            {...createPreviewAttributes({
+              entryId: page.id,
+              fieldApiId: 'description',
+              componentChain: chain,
+            })}
+          >
+            {feature.description}
+          </p>
+        </div>
+      );
+    })}
+  </div>
+))}
+```
+
+#### Union/Modular Components (Multiple Component Types)
+
+When a field accepts different component types, handle each type in a switch statement:
+
+```tsx
+{page.contentSections.map((section) => {
+  const chain = [createComponentChainLink('contentSections', section.id)];
+
+  switch (section.__typename) {
+    case 'HeroSection':
+      return (
+        <section key={section.id}>
+          <h1
+            {...createPreviewAttributes({
+              entryId: page.id,
+              fieldApiId: 'headline',
+              componentChain: chain,
+            })}
+          >
+            {section.headline}
+          </h1>
+        </section>
+      );
+
+    case 'FeatureGrid':
+      return (
+        <section key={section.id}>
+          <h2
+            {...createPreviewAttributes({
+              entryId: page.id,
+              fieldApiId: 'gridTitle',
+              componentChain: chain,
+            })}
+          >
+            {section.gridTitle}
+          </h2>
+          {/* Render nested features with extended chain */}
+        </section>
+      );
+
+    default:
+      return null;
+  }
+})}
+```
+
+#### Complete Example: Page with Modular Content
+
+Here's a full example showing a page template with multiple component types and nesting:
+
+```tsx
+import {
+  createPreviewAttributes,
+  createComponentChainLink,
+} from '@hygraph/preview-sdk/core';
+
+interface Page {
+  id: string;
+  title: string;
+  contentSections: Array<HeroSection | FeatureGrid | Testimonial>;
+}
+
+export function PageTemplate({ page }: { page: Page }) {
+  return (
+    <main>
+      {/* Simple field - no component chain needed */}
+      <h1
+        {...createPreviewAttributes({
+          entryId: page.id,
+          fieldApiId: 'title',
+        })}
+      >
+        {page.title}
+      </h1>
+
+      {/* Modular content sections */}
+      {page.contentSections.map((section, index) => {
+        const sectionChain = [
+          createComponentChainLink('contentSections', section.id)
+        ];
+
+        switch (section.__typename) {
+          case 'HeroSection':
+            return (
+              <section key={section.id} className="hero">
+                <h2
+                  {...createPreviewAttributes({
+                    entryId: page.id,
+                    fieldApiId: 'headline',
+                    componentChain: sectionChain,
+                  })}
+                >
+                  {section.headline}
+                </h2>
+                <div
+                  {...createPreviewAttributes({
+                    entryId: page.id,
+                    fieldApiId: 'content',
+                    componentChain: sectionChain,
+                  })}
+                  data-hygraph-rich-text-format="html"
+                  dangerouslySetInnerHTML={{ __html: section.content.html }}
+                />
+              </section>
+            );
+
+          case 'FeatureGrid':
+            return (
+              <section key={section.id} className="features">
+                {section.features.map((feature, featureIndex) => {
+                  // Extend the chain for nested components
+                  const featureChain = [
+                    ...sectionChain,
+                    createComponentChainLink('features', feature.id)
+                  ];
+
+                  return (
+                    <div key={feature.id} className="feature-card">
+                      <h3
+                        {...createPreviewAttributes({
+                          entryId: page.id,
+                          fieldApiId: 'title',
+                          componentChain: featureChain,
+                        })}
+                      >
+                        {feature.title}
+                      </h3>
+                      <p
+                        {...createPreviewAttributes({
+                          entryId: page.id,
+                          fieldApiId: 'description',
+                          componentChain: featureChain,
+                        })}
+                      >
+                        {feature.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </section>
+            );
+
+          case 'Testimonial':
+            return (
+              <blockquote
+                key={section.id}
+                {...createPreviewAttributes({
+                  entryId: page.id,
+                  fieldApiId: 'quote',
+                  componentChain: sectionChain,
+                })}
+              >
+                {section.quote}
+              </blockquote>
+            );
+
+          default:
+            return null;
+        }
+      })}
+    </main>
+  );
+}
+```
+
+#### Using Raw HTML Attributes (Without Helpers)
+
+If you prefer not to use the helper functions, you can write the attributes directly:
+
+```html
+<!-- Single-level component -->
+<span
+  data-hygraph-entry-id="page_123"
+  data-hygraph-field-api-id="headline"
+  data-hygraph-component-chain='[{"fieldApiId":"contentSections","instanceId":"section_abc"}]'
+>
+  Welcome
+</span>
+
+<!-- Deeply nested component -->
+<p
+  data-hygraph-entry-id="page_123"
+  data-hygraph-field-api-id="description"
+  data-hygraph-component-chain='[{"fieldApiId":"contentSections","instanceId":"section_abc"},{"fieldApiId":"features","instanceId":"feature_xyz"}]'
+>
+  Feature description here
+</p>
+```
+
+> **Note:** Always use double quotes inside the JSON string and single quotes for the HTML attribute value to ensure valid HTML.
 
 ## Framework Guides
 

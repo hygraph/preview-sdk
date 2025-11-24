@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-11-24
+
+### Documentation
+- Enhanced README with comprehensive explanations of `data-hygraph-component-chain` attribute
+- Added detailed examples for single-level and deeply nested components
+- Clarified the relationship between `data-hygraph-entry-id` and component chains
+- Added examples for union/modular components with multiple component types
+- Included GraphQL query examples showing how to extract `instanceId` values
+- Improved component chain documentation with helper function usage examples
+
 ## [1.0.0] - 2024-11-13
 
 ### Added
