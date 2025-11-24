@@ -115,7 +115,7 @@ Use the `data-hygraph-component-chain` attribute when a field lives inside a mod
 | Attribute | Value | Purpose |
 |-----------|-------|---------|
 | `data-hygraph-entry-id` | Always the **root page/entry ID** | Identifies which Hygraph entry contains this content |
-| `data-hygraph-field-api-id` | The field name in your schema | Identifies which field to open in the editor |
+| `data-hygraph-field-api-id` | The component field name in your schema | Identifies which field to open in the editor |
 | `data-hygraph-component-chain` | JSON array of `{fieldApiId, instanceId}` | Describes the path from root entry to the nested field |
 
 **Important:** `data-hygraph-entry-id` is always the root entry ID (e.g., page or article), even for deeply nested components. The component chain handles the navigation to nested fields—you never use the component's ID as the entry ID.
