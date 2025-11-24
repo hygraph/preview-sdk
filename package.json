@@ -1,6 +1,6 @@
 {
   "name": "@hygraph/preview-sdk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Content preview SDK for seamless real-time content editing in Hygraph CMS",
   "publishConfig": {
     "access": "public"
@@ -40,7 +40,8 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "test": "vitest --run --passWithNoTests",
     "test:ui": "vitest --ui",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "hygraph",
