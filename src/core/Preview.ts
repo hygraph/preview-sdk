@@ -604,7 +604,7 @@ export class Preview {
   }
 
   private buildStudioUrl(entryId: string, fieldApiId?: string, locale?: string, componentChain?: ComponentChainLink[]): string {
-    const baseUrl = this.config.studioUrl || 'https://app.hygraph.com';
+    const baseUrl = (this.config.studioUrl || 'https://app.hygraph.com').replace(/\/+$/, '');
     const params = new URLSearchParams({
       endpoint: this.config.endpoint,
       entryId,
