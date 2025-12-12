@@ -49,7 +49,8 @@ export default function RecipePage() {
             </Link>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
+          {/* Entry ID inheritance: children with field-api-id inherit entry-id from this parent */}
+          <div className="grid lg:grid-cols-2 gap-12 items-start" data-hygraph-entry-id={recipe.id}>
             {/* Hero Image */}
             {recipe.heroImage && (
               <div data-hygraph-field-api-id="heroImage">
@@ -64,40 +65,40 @@ export default function RecipePage() {
             )}
 
             <div className="lg:pl-8">
-              <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight tracking-tight" data-hygraph-field-api-id="title" data-hygraph-entry-id={recipe.id}>
+              <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight tracking-tight" data-hygraph-field-api-id="title">
                 {recipe.title}
               </h1>
 
               {/* Rich Text field with HTML format preference */}
-              <div className="prose prose-xl prose-invert mb-8 text-gray-300 leading-relaxed" data-hygraph-field-api-id="description" data-hygraph-entry-id={recipe.id} data-hygraph-rich-text-format="html">
+              <div className="prose prose-xl prose-invert mb-8 text-gray-300 leading-relaxed" data-hygraph-field-api-id="description" data-hygraph-rich-text-format="html">
                 <div dangerouslySetInnerHTML={{ __html: recipe.description.html }} />
               </div>
 
               {/* Recipe Meta */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {recipe.prepTime && (
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="prepTime" data-hygraph-entry-id={recipe.id}>
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="prepTime">
                     <div className="text-3xl mb-3">⏱️</div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Prep Time</div>
                     <div className="text-2xl font-bold text-white">{recipe.prepTime}<span className="text-sm font-normal text-gray-400">min</span></div>
                   </div>
                 )}
                 {recipe.cookTime && (
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="cookTime" data-hygraph-entry-id={recipe.id}>
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="cookTime">
                     <div className="text-3xl mb-3">🔥</div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Cook Time</div>
                     <div className="text-2xl font-bold text-white">{recipe.cookTime}<span className="text-sm font-normal text-gray-400">min</span></div>
                   </div>
                 )}
                 {recipe.servings && (
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="servings" data-hygraph-entry-id={recipe.id}>
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="servings">
                     <div className="text-3xl mb-3">🍽️</div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Servings</div>
                     <div className="text-2xl font-bold text-white">{recipe.servings}</div>
                   </div>
                 )}
                 {recipe.difficulty && (
-                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="difficulty" data-hygraph-entry-id={recipe.id}>
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-5 text-center shadow-lg ring-1 ring-white/10 hover:ring-white/20 hover:bg-gray-800/80 transition-all" data-hygraph-field-api-id="difficulty">
                     <div className="text-3xl mb-3">📊</div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Difficulty</div>
                     <div className="text-2xl font-bold text-white">{recipe.difficulty}</div>

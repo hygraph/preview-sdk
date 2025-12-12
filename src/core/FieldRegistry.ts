@@ -111,7 +111,16 @@ export class FieldRegistry {
         if (mutation.type === 'childList') {
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
-              this.scanElement(node as HTMLElement);
+              const element = node as HTMLElement;
+              this.scanElement(element);
+
+              // Also check if this element has field-api-id without entry-id (inherited)
+              if (
+                element.hasAttribute('data-hygraph-field-api-id') &&
+                !element.hasAttribute('data-hygraph-entry-id')
+              ) {
+                this.registerInheritedElement(element);
+              }
             }
           }
         }
@@ -136,8 +145,17 @@ export class FieldRegistry {
   }
 
   private scanExistingElements(): void {
-    const elements = document.querySelectorAll('[data-hygraph-entry-id]');
-    elements.forEach((element) => this.scanElement(element as HTMLElement));
+    // Scan elements with explicit entry-id (existing behavior)
+    const explicitElements = document.querySelectorAll('[data-hygraph-entry-id]');
+    explicitElements.forEach((element) => this.scanElement(element as HTMLElement));
+
+    // Scan elements with field-api-id that inherit entry-id from ancestors
+    const inheritedElements = document.querySelectorAll(
+      '[data-hygraph-field-api-id]:not([data-hygraph-entry-id])'
+    );
+    inheritedElements.forEach((element) =>
+      this.registerInheritedElement(element as HTMLElement)
+    );
   }
 
   private scanElement(element: HTMLElement): void {
@@ -145,9 +163,17 @@ export class FieldRegistry {
       this.registerElement(element);
     }
 
-    // Also scan children
+    // Also scan children with explicit entry-id
     const children = element.querySelectorAll('[data-hygraph-entry-id]');
     children.forEach((child) => this.registerElement(child as HTMLElement));
+
+    // Scan children that inherit entry-id (field-api-id without entry-id)
+    const inheritedChildren = element.querySelectorAll(
+      '[data-hygraph-field-api-id]:not([data-hygraph-entry-id])'
+    );
+    inheritedChildren.forEach((child) =>
+      this.registerInheritedElement(child as HTMLElement)
+    );
   }
 
   private hasHygraphAttributes(element: HTMLElement): boolean {
@@ -195,6 +221,66 @@ export class FieldRegistry {
     }
   }
 
+  /**
+   * Register an element that inherits entry-id from an ancestor
+   */
+  private registerInheritedElement(element: HTMLElement): void {
+    const fieldApiId = element.getAttribute('data-hygraph-field-api-id');
+    if (!fieldApiId) return;
+
+    // Find ancestor with entry-id
+    const ancestor = element.closest('[data-hygraph-entry-id]');
+    if (!ancestor) {
+      if (this.config.debug) {
+        console.warn(
+          '[FieldRegistry] Element has field-api-id but no ancestor with entry-id:',
+          element
+        );
+      }
+      return;
+    }
+
+    const entryId = ancestor.getAttribute('data-hygraph-entry-id');
+    if (!entryId) return;
+
+    const componentChainRaw =
+      element.getAttribute('data-hygraph-component-chain') || undefined;
+
+    const registeredElement: RegisteredElement = {
+      element,
+      entryId,
+      fieldApiId,
+      componentChainRaw,
+      lastUpdated: Date.now(),
+    };
+
+    const key = this.createRegistryKey(entryId, fieldApiId);
+
+    // Initialize array if it doesn't exist
+    if (!this.registry[key]) {
+      this.registry[key] = [];
+    }
+
+    // Check if element is already registered
+    const existingIndex = this.registry[key].findIndex((reg) => reg.element === element);
+    if (existingIndex >= 0) {
+      // Update existing registration
+      this.registry[key][existingIndex] = registeredElement;
+    } else {
+      // Add new registration
+      this.registry[key].push(registeredElement);
+    }
+
+    if (this.config.debug) {
+      console.log(`[FieldRegistry] Registered inherited element:`, {
+        entryId,
+        fieldApiId,
+        element: element.tagName,
+        inheritedFrom: (ancestor as HTMLElement).tagName,
+      });
+    }
+  }
+
   private updateElementRegistration(element: HTMLElement): void {
     // Remove old registrations for this element
     this.unregisterElement(element);
@@ -202,6 +288,9 @@ export class FieldRegistry {
     // Re-register with new attributes
     if (this.hasHygraphAttributes(element)) {
       this.registerElement(element);
+    } else if (element.hasAttribute('data-hygraph-field-api-id')) {
+      // Element has field-api-id but no entry-id - try inheritance
+      this.registerInheritedElement(element);
     }
   }
 
