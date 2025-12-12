@@ -44,33 +44,6 @@ describe('ContentUpdater', () => {
     expect(result.error).toBe('No matching elements found');
   });
 
-  it('respects locale when selecting elements', async () => {
-    const element = createPreviewElement({
-      entryId: 'entry-locale',
-      fieldApiId: 'title',
-      locale: 'en',
-      textContent: 'Hello',
-    });
-
-    createPreviewElement({
-      entryId: 'entry-locale',
-      fieldApiId: 'title',
-      locale: 'de',
-      textContent: 'Hallo',
-    });
-
-    const result = await updater.updateField({
-      entryId: 'entry-locale',
-      fieldApiId: 'title',
-      locale: 'en',
-      fieldType: 'STRING',
-      newValue: 'Updated EN',
-    });
-
-    expect(result.success).toBe(true);
-    expect(element.textContent).toBe('Updated EN');
-  });
-
   it('applies multi-format rich text updates based on element preference', async () => {
     const element = createPreviewElement({
       entryId: 'entry-rich-text',

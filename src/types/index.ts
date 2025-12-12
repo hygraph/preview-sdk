@@ -21,7 +21,7 @@ export interface ComponentChainLink {
 export type StudioMessage =
   | { type: 'init'; studioOrigin: string; timestamp: number }
   | (FieldUpdate & { type: 'field-update'; timestamp: number })
-  | { type: 'field-focus'; entryId: string; fieldApiId: string; componentChain?: ComponentChainLink[]; locale?: string; timestamp: number }
+  | { type: 'field-focus'; entryId: string; fieldApiId: string; componentChain?: ComponentChainLink[]; timestamp: number }
   | { type: 'content-saved'; entryId: string; timestamp: number }
   | { type: 'disconnect'; timestamp: number };
 
@@ -59,7 +59,6 @@ export type SDKMessage =
       type: 'field-click';
       entryId: string;
       fieldApiId?: string;
-      locale?: string;
       componentChain?: ComponentChainLink[];
       timestamp: number;
     };
@@ -89,7 +88,6 @@ export type FieldType =
 interface FieldUpdateBase {
   entryId: string;
   fieldApiId: string;
-  locale?: string;
   updateId?: string;
 }
 
@@ -220,7 +218,7 @@ export interface PreviewConfig {
   allowedOrigins?: string[];
   studioUrl?: string; // Allow custom Studio URL (for development)
   mode?: 'auto' | 'iframe' | 'standalone'; // Force specific mode
-  onFieldFocus?: (fieldApiId: string, locale?: string) => void; // Custom field focus handler
+  onFieldFocus?: (fieldApiId: string) => void; // Custom field focus handler
   onFieldUpdate?: (update: FieldUpdate) => void; // Custom field update handler
 
   // Studio sync capabilities
@@ -274,7 +272,6 @@ export interface OverlayConfig {
 export interface ElementAttributes {
   'data-hygraph-entry-id': string;
   'data-hygraph-field-api-id'?: string;
-  'data-hygraph-field-locale'?: string;
   'data-hygraph-component-chain'?: string;
 }
 
@@ -283,7 +280,6 @@ export interface RegisteredElement {
   element: HTMLElement;
   entryId: string;
   fieldApiId?: string;
-  locale?: string;
   componentChainRaw?: string;
   lastUpdated?: number;
 }
@@ -300,11 +296,10 @@ export interface PreviewEvents {
   'preview:ready': CustomEvent<{ preview: unknown }>;
   'preview:connected': CustomEvent<{ studioOrigin: string }>;
   'preview:disconnected': CustomEvent<Record<string, never>>;
-  'preview:field-focus': CustomEvent<{ entryId: string; fieldApiId: string; locale?: string }>;
+  'preview:field-focus': CustomEvent<{ entryId: string; fieldApiId: string }>;
   'preview:field-click': CustomEvent<{
     entryId: string;
     fieldApiId?: string;
-    locale?: string;
     componentChain?: ComponentChainLink[];
     mode?: 'iframe' | 'standalone';
   }>;
@@ -332,7 +327,7 @@ export interface SubscriptionConfig {
   callback: SaveCallback;
 }
 
-// Registry key format: "entryId:fieldApiId:locale?"
+// Registry key format: "entryId:fieldApiId"
 export type RegistryKey = string;
 
 // Update result
@@ -366,6 +361,5 @@ declare global {
   interface HTMLElement {
     'data-hygraph-entry-id'?: string;
     'data-hygraph-field-api-id'?: string;
-    'data-hygraph-field-locale'?: string;
   }
 }

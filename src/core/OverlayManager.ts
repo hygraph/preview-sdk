@@ -193,14 +193,12 @@ export class OverlayManager {
       // Get registered element data
       const entryId = hygraphElement.getAttribute('data-hygraph-entry-id');
       const fieldApiId = hygraphElement.getAttribute('data-hygraph-field-api-id');
-      const locale = hygraphElement.getAttribute('data-hygraph-field-locale');
 
       if (entryId) {
         const registeredElement: RegisteredElement = {
           element: hygraphElement,
           entryId,
           fieldApiId: fieldApiId || undefined,
-          locale: locale || undefined,
         };
 
         // Show overlay immediately

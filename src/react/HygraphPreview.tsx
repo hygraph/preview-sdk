@@ -26,7 +26,7 @@ export interface HygraphPreviewProps extends PreviewConfig {
   onDisconnected?: () => void;
   onSave?: SaveCallback;
   onError?: (error: Error) => void;
-  onFieldFocus?: (fieldApiId: string, locale?: string) => void;
+  onFieldFocus?: (fieldApiId: string) => void;
   onFieldUpdate?: (update: import('../types').FieldUpdate) => void;
 }
 

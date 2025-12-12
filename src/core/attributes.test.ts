@@ -13,13 +13,11 @@ describe('attributes helpers', () => {
     const attributes = createPreviewAttributes({
       entryId: 'entry-1',
       fieldApiId: 'title',
-      locale: 'en',
     });
 
     expect(attributes).toEqual({
       'data-hygraph-entry-id': 'entry-1',
       'data-hygraph-field-api-id': 'title',
-      'data-hygraph-field-locale': 'en',
     });
   });
 

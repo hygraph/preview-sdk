@@ -36,7 +36,7 @@ export class ContentUpdater {
 
     try {
       // Debounce updates
-      const updateKey = `${update.entryId}:${update.fieldApiId}:${update.locale || ''}`;
+      const updateKey = `${update.entryId}:${update.fieldApiId}`;
       this.updateQueue.set(updateKey, update);
 
       // Wait for debounce delay
@@ -52,7 +52,7 @@ export class ContentUpdater {
       this.updateQueue.delete(updateKey);
 
       // Find target elements
-      const elements = this.findElements(update.entryId, update.fieldApiId, update.locale);
+      const elements = this.findElements(update.entryId, update.fieldApiId);
       if (elements.length === 0) {
         return { success: false, error: 'No matching elements found' };
       }
@@ -79,7 +79,6 @@ export class ContentUpdater {
         console.log('[ContentUpdater] Updated field:', {
           entryId: update.entryId,
           fieldApiId: update.fieldApiId,
-          locale: update.locale,
           elementsCount: elements.length,
         });
       }
@@ -101,16 +100,13 @@ export class ContentUpdater {
     this.updateQueue.clear();
   }
 
-  private findElements(entryId: string, fieldApiId?: string, locale?: string): HTMLElement[] {
+  private findElements(entryId: string, fieldApiId?: string): HTMLElement[] {
     const elements: HTMLElement[] = [];
 
     // Build selector
     let selector = `[data-hygraph-entry-id="${entryId}"]`;
     if (fieldApiId) {
       selector += `[data-hygraph-field-api-id="${fieldApiId}"]`;
-    }
-    if (locale) {
-      selector += `[data-hygraph-field-locale="${locale}"]`;
     }
 
     const found = document.querySelectorAll<HTMLElement>(selector);
