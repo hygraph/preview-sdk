@@ -69,33 +69,54 @@ export function PreviewWrapper({ children }) {
 
 ### Mark Your Content
 
-Add `data-hygraph-*` attributes to make content editable:
+Add `data-hygraph-*` attributes to make content editable. The SDK supports two patterns:
+
+#### Pattern 1: Inherited Entry ID (Recommended)
+
+Child elements with `data-hygraph-field-api-id` automatically inherit `data-hygraph-entry-id` from their nearest ancestor. This keeps your markup clean:
 
 ```tsx
-<article data-hygraph-entry-id="entry-123">
-  <h1
-    data-hygraph-entry-id="entry-123"
-    data-hygraph-field-api-id="title"
-  >
-    My Article Title
+<article data-hygraph-entry-id={post.id}>
+  <h1 data-hygraph-field-api-id="title">
+    {post.title}
   </h1>
 
-  <p
-    data-hygraph-entry-id="entry-123"
-    data-hygraph-field-api-id="content"
-  >
-    Article content here...
+  <p data-hygraph-field-api-id="content">
+    {post.content}
   </p>
 </article>
 ```
 
-Required attribute:
-- `data-hygraph-entry-id`: The entry ID from Hygraph. Every element you want to make editable must include this.
+#### Pattern 2: Explicit Entry ID
 
-Common optional attributes:
-- `data-hygraph-field-api-id`: Identifies which field to open. Without it the edit button opens the entry without focusing a field.
-- `data-hygraph-rich-text-format`: Set to `html`, `markdown`, or `text` so the SDK knows which format to update on field sync.
-- `data-hygraph-component-chain`: JSON string describing the path to nested components (see below).
+You can also set `data-hygraph-entry-id` explicitly on each element. This is useful when you have nested content from different entries:
+
+```tsx
+<article data-hygraph-entry-id={page.id}>
+  <h1 data-hygraph-field-api-id="title">
+    {page.title}
+  </h1>
+
+  {/* This recipe comes from a different entry */}
+  <div
+    data-hygraph-entry-id={recipe.id}
+    data-hygraph-field-api-id="name"
+  >
+    {recipe.name}
+  </div>
+</article>
+```
+
+Both patterns work together—explicit entry IDs take precedence over inherited ones. Use whichever fits your code structure.
+
+#### Attributes Reference
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `data-hygraph-entry-id` | On element or ancestor | The Hygraph entry ID. Can be set on a parent and inherited by children with `field-api-id`. |
+| `data-hygraph-field-api-id` | No | Which field to open. Elements with this attribute inherit entry-id from ancestors if not explicitly set. |
+| `data-hygraph-rich-text-format` | No | Set to `html`, `markdown`, or `text` so the SDK knows which format to update on field sync. |
+| `data-hygraph-component-chain` | No | JSON string describing the path to nested components (see below). |
 
 ```tsx
 <div
