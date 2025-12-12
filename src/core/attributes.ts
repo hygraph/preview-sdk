@@ -3,12 +3,11 @@ import type { ComponentChainLink, ElementAttributes } from '../types';
 export interface PreviewFieldOptions {
   entryId: string;
   fieldApiId?: string;
-  locale?: string;
   componentChain?: ComponentChainLink[];
 }
 
 export function createPreviewAttributes(options: PreviewFieldOptions): ElementAttributes {
-  const { entryId, fieldApiId, locale, componentChain } = options;
+  const { entryId, fieldApiId, componentChain } = options;
 
   if (!entryId) {
     throw new Error('[Preview SDK] createPreviewAttributes requires an entryId');
@@ -20,10 +19,6 @@ export function createPreviewAttributes(options: PreviewFieldOptions): ElementAt
 
   if (fieldApiId) {
     attributes['data-hygraph-field-api-id'] = fieldApiId;
-  }
-
-  if (locale) {
-    attributes['data-hygraph-field-locale'] = locale;
   }
 
   const serializedChain = serializeComponentChain(componentChain);

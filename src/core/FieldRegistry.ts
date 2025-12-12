@@ -25,13 +25,13 @@ export class FieldRegistry {
   /**
    * Get all elements for a specific field
    */
-  getElementsForField(fieldApiId: string, locale?: string): RegisteredElement[] {
+  getElementsForField(fieldApiId: string): RegisteredElement[] {
     const elements: RegisteredElement[] = [];
 
-    // Search through all registry entries for matching fieldApiId and locale
+    // Search through all registry entries for matching fieldApiId
     for (const elementList of Object.values(this.registry)) {
       for (const element of elementList) {
-        if (element.fieldApiId === fieldApiId && element.locale === locale) {
+        if (element.fieldApiId === fieldApiId) {
           elements.push(element);
         }
       }
@@ -43,15 +43,13 @@ export class FieldRegistry {
   /**
    * Get elements for a specific entry + field combination
    */
-  getElementsForEntryField(entryId: string, fieldApiId: string, locale?: string): RegisteredElement[] {
+  getElementsForEntryField(entryId: string, fieldApiId: string): RegisteredElement[] {
     const elements: RegisteredElement[] = [];
 
-    // Search through all registry entries for matching entryId, fieldApiId, and locale
+    // Search through all registry entries for matching entryId and fieldApiId
     for (const elementList of Object.values(this.registry)) {
       for (const element of elementList) {
-        if (element.entryId === entryId &&
-            element.fieldApiId === fieldApiId &&
-            element.locale === locale) {
+        if (element.entryId === entryId && element.fieldApiId === fieldApiId) {
           elements.push(element);
         }
       }
@@ -80,8 +78,8 @@ export class FieldRegistry {
   /**
    * Get specific element by exact match
    */
-  getElement(entryId: string, fieldApiId?: string, locale?: string): RegisteredElement | null {
-    const key = this.createRegistryKey(entryId, fieldApiId, locale);
+  getElement(entryId: string, fieldApiId?: string): RegisteredElement | null {
+    const key = this.createRegistryKey(entryId, fieldApiId);
     const elements = this.registry[key];
     return elements?.[0] || null;
   }
@@ -132,7 +130,6 @@ export class FieldRegistry {
       attributeFilter: [
         'data-hygraph-entry-id',
         'data-hygraph-field-api-id',
-        'data-hygraph-field-locale',
         'data-hygraph-component-chain',
       ],
     });
@@ -162,19 +159,17 @@ export class FieldRegistry {
     if (!entryId) return;
 
     const fieldApiId = element.getAttribute('data-hygraph-field-api-id') || undefined;
-    const locale = element.getAttribute('data-hygraph-field-locale') || undefined;
     const componentChainRaw = element.getAttribute('data-hygraph-component-chain') || undefined;
 
     const registeredElement: RegisteredElement = {
       element,
       entryId,
       fieldApiId,
-      locale,
       componentChainRaw,
       lastUpdated: Date.now(),
     };
 
-    const key = this.createRegistryKey(entryId, fieldApiId, locale);
+    const key = this.createRegistryKey(entryId, fieldApiId);
 
     // Initialize array if it doesn't exist
     if (!this.registry[key]) {
@@ -195,7 +190,6 @@ export class FieldRegistry {
       console.log(`[FieldRegistry] Registered element:`, {
         entryId,
         fieldApiId,
-        locale,
         element: element.tagName,
       });
     }
@@ -222,10 +216,9 @@ export class FieldRegistry {
     }
   }
 
-  private createRegistryKey(entryId: string, fieldApiId?: string, locale?: string): RegistryKey {
+  private createRegistryKey(entryId: string, fieldApiId?: string): RegistryKey {
     const parts = [entryId];
     if (fieldApiId) parts.push(fieldApiId);
-    if (locale) parts.push(locale);
     return parts.join(':');
   }
 

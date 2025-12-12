@@ -25,9 +25,8 @@ export interface HygraphPreviewNextjsProps extends Omit<HygraphPreviewProps, 'on
    * Optional custom field focus handler
    * Override the default behavior when Studio requests field focus
    * @param fieldApiId - The field API ID to focus
-   * @param locale - The locale of the field (if applicable)
    */
-  onFieldFocus?: (fieldApiId: string, locale?: string) => void;
+  onFieldFocus?: (fieldApiId: string) => void;
 
   /**
    * Optional custom field update handler

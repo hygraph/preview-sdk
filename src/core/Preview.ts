@@ -258,10 +258,9 @@ export class Preview {
         const entryId = element.getAttribute('data-hygraph-entry-id');
         const fieldApiId = element.getAttribute('data-hygraph-field-api-id');
         const format = element.getAttribute('data-hygraph-rich-text-format') as RichTextFormatType;
-        const locale = element.getAttribute('data-hygraph-field-locale') || '';
 
         if (entryId && fieldApiId && format && ['html', 'markdown', 'text'].includes(format)) {
-          const fieldKey = `${entryId}:${fieldApiId}:${locale}`;
+          const fieldKey = `${entryId}:${fieldApiId}`;
 
           // Check for duplicate field usage (UNSUPPORTED)
           if (formatPreferences[fieldKey]) {
@@ -373,20 +372,18 @@ export class Preview {
       entryId: message.entryId,
       fieldApiId: message.fieldApiId,
       componentChain: message.componentChain,
-      locale: message.locale,
     });
 
     // Emit event for listeners
     this.emitEvent('preview:field-focus', {
       entryId: message.entryId,
       fieldApiId: message.fieldApiId,
-      locale: message.locale,
     });
 
     // Use custom handler if provided
     if (this.config.onFieldFocus) {
       console.log('[Preview] Using custom onFieldFocus handler');
-      this.config.onFieldFocus(message.fieldApiId, message.locale);
+      this.config.onFieldFocus(message.fieldApiId);
       return;
     }
 
@@ -394,8 +391,7 @@ export class Preview {
     console.log('[Preview] Searching for field in registry...');
     let elements = this.fieldRegistry.getElementsForEntryField(
       message.entryId,
-      message.fieldApiId,
-      undefined // locale not supported yet
+      message.fieldApiId
     );
 
     console.log('[Preview] Initial registry search result:', {
@@ -462,7 +458,6 @@ export class Preview {
         entryId: message.entryId,
         fieldApiId: message.fieldApiId,
         componentChain: message.componentChain,
-        locale: message.locale,
       });
 
       // Debug: Log all registered elements
@@ -529,7 +524,6 @@ export class Preview {
   private handleIframeEditClick(element: HTMLElement): void {
     const entryId = element.getAttribute('data-hygraph-entry-id');
     const fieldApiId = element.getAttribute('data-hygraph-field-api-id') || undefined;
-    const locale = element.getAttribute('data-hygraph-field-locale') || undefined;
     const componentChain = this.parseComponentChain(
       element.getAttribute('data-hygraph-component-chain') || undefined
     );
@@ -542,7 +536,6 @@ export class Preview {
         type: 'field-click',
         entryId,
         fieldApiId,
-        locale,
         componentChain,
         timestamp: Date.now(),
       };
@@ -562,8 +555,7 @@ export class Preview {
     this.emitEvent('preview:field-click', {
       entryId,
       fieldApiId,
-      locale,
-       componentChain,
+      componentChain,
       mode: this.mode
     });
   }
@@ -571,7 +563,6 @@ export class Preview {
   private handleStandaloneEditClick(element: HTMLElement): void {
     const entryId = element.getAttribute('data-hygraph-entry-id');
     const fieldApiId = element.getAttribute('data-hygraph-field-api-id') || undefined;
-    const locale = element.getAttribute('data-hygraph-field-locale') || undefined;
     const componentChain = this.parseComponentChain(
       element.getAttribute('data-hygraph-component-chain') || undefined
     );
@@ -584,7 +575,7 @@ export class Preview {
     }
 
     // Construct Studio resource route URL
-    const studioUrl = this.buildStudioUrl(entryId, fieldApiId, locale, componentChain);
+    const studioUrl = this.buildStudioUrl(entryId, fieldApiId, componentChain);
 
     // Open in new tab
     window.open(studioUrl, '_blank', 'noopener,noreferrer');
@@ -597,13 +588,12 @@ export class Preview {
     this.emitEvent('preview:field-click', {
       entryId,
       fieldApiId,
-      locale,
       componentChain,
       mode: this.mode
     });
   }
 
-  private buildStudioUrl(entryId: string, fieldApiId?: string, locale?: string, componentChain?: ComponentChainLink[]): string {
+  private buildStudioUrl(entryId: string, fieldApiId?: string, componentChain?: ComponentChainLink[]): string {
     const baseUrl = (this.config.studioUrl || 'https://app.hygraph.com').replace(/\/+$/, '');
     const params = new URLSearchParams({
       endpoint: this.config.endpoint,
@@ -611,7 +601,6 @@ export class Preview {
     });
 
     if (fieldApiId) params.set('fieldApiId', fieldApiId);
-    if (locale) params.set('locale', locale);
     if (componentChain && componentChain.length > 0) {
       params.set('componentChain', JSON.stringify(componentChain));
     }
