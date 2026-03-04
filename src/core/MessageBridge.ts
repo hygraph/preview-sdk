@@ -57,26 +57,20 @@ export class MessageBridge {
   sendReadyMessage(message: SDKMessage & { type: 'ready' }): boolean {
     if (this.isDestroyed) return false;
 
-    let sentSuccessfully = false;
+    try {
+      // Use "*" as targetOrigin to send to any parent window
+      // Security is maintained by validating incoming messages via isOriginAllowed()
+      window.parent.postMessage(message, '*');
 
-    // Try sending to each allowed origin
-    for (const origin of this.config.allowedOrigins) {
-      try {
-        window.parent.postMessage(message, origin);
-
-        if (this.config.debug) {
-          console.log('[MessageBridge] Sent ready message to origin:', origin, 'message:', message);
-        }
-
-        sentSuccessfully = true;
-      } catch (error) {
-        if (this.config.debug) {
-          console.log('[MessageBridge] Failed to send ready message to origin:', origin, 'error:', error);
-        }
+      if (this.config.debug) {
+        console.log('[MessageBridge] Sent ready message to parent window, message:', message);
       }
-    }
 
-    return sentSuccessfully;
+      return true;
+    } catch (error) {
+      console.error('[MessageBridge] Failed to send ready message to origin: * error:', error);
+      return false;
+    }
   }
 
   /**

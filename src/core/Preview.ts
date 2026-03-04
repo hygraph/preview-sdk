@@ -88,7 +88,7 @@ export class Preview {
    * Get current SDK version
    */
   getVersion(): string {
-    return '2.0.0';
+    return '1.0.5';
   }
 
   /**

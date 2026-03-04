@@ -53,7 +53,7 @@ describe('MessageBridge', () => {
     expect(bridge.isConnectedToStudio()).toBe(true);
   });
 
-  it('broadcasts ready message to all allowed origins', () => {
+  it('sends ready message to any parent window using wildcard origin', () => {
     bridge = new MessageBridge({
       allowedOrigins,
       debug: false,
@@ -69,9 +69,9 @@ describe('MessageBridge', () => {
 
     bridge.sendReadyMessage(readyMessage);
 
-    expect(mockBridge.postMessage).toHaveBeenCalledTimes(allowedOrigins.length);
-    const targets = mockBridge.messages.map(({ targetOrigin }) => targetOrigin);
-    expect(targets).toEqual(expect.arrayContaining(allowedOrigins));
+    // Should send once with wildcard origin to reach any parent
+    expect(mockBridge.postMessage).toHaveBeenCalledTimes(1);
+    expect(mockBridge.postMessage).toHaveBeenCalledWith(readyMessage, '*');
   });
 
   it('ignores messages from disallowed origins', () => {
@@ -119,6 +119,69 @@ describe('MessageBridge', () => {
     mockBridge.dispatch(validMessage, allowedOrigins[0]);
 
     expect(onMessage).toHaveBeenCalledWith(validMessage);
+  });
+
+  it('accepts messages from origins matching wildcard patterns', () => {
+    bridge = new MessageBridge({
+      allowedOrigins: ['https://*.hygraph.com', 'http://localhost:*'],
+      debug: false,
+      onMessage,
+    });
+
+    // Test wildcard domain pattern
+    mockBridge.dispatch(
+      {
+        type: 'init',
+        studioOrigin: 'https://app.hygraph.com',
+        timestamp: Date.now(),
+      },
+      'https://app.hygraph.com'
+    );
+
+    expect(onMessage).toHaveBeenCalled();
+    expect(bridge.isConnectedToStudio()).toBe(true);
+    onMessage.mockClear();
+
+    // Test wildcard port pattern
+    const bridge2 = new MessageBridge({
+      allowedOrigins: ['http://localhost:*'],
+      debug: false,
+      onMessage,
+    });
+
+    mockBridge.dispatch(
+      {
+        type: 'init',
+        studioOrigin: 'http://localhost:3000',
+        timestamp: Date.now(),
+      },
+      'http://localhost:3000'
+    );
+
+    expect(onMessage).toHaveBeenCalled();
+    expect(bridge2.isConnectedToStudio()).toBe(true);
+
+    bridge2.destroy();
+  });
+
+  it('rejects messages from origins not matching wildcard patterns', () => {
+    bridge = new MessageBridge({
+      allowedOrigins: ['https://*.hygraph.com'],
+      debug: false,
+      onMessage,
+    });
+
+    mockBridge.dispatch(
+      {
+        type: 'init',
+        studioOrigin: 'https://malicious.example.com',
+        timestamp: Date.now(),
+      },
+      'https://malicious.example.com'
+    );
+
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(bridge.isConnectedToStudio()).toBe(false);
   });
 });
 
