@@ -37,7 +37,11 @@ export class Preview {
       updateDelay: 50,
       retryAttempts: 3,
       autoConnect: true,
-      allowedOrigins: ['https://app.hygraph.com', 'http://localhost:3000'],
+      allowedOrigins: [
+        'https://*.hygraph.com',
+        'https://*.hygraph.dev',
+        'http://localhost:*',
+      ],
       ...config,
     };
 
