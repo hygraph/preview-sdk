@@ -131,7 +131,7 @@ export class ContentUpdater {
         });
       }
 
-      elements = elements.filter((element) => {
+      const filtered = elements.filter((element) => {
         const elementChain = element.getAttribute('data-hygraph-component-chain');
 
         if (this.config.debug) {
@@ -143,16 +143,25 @@ export class ContentUpdater {
         }
 
         if (!elementChain) {
-          // Element has no component chain, doesn't match
+          // Element has no component chain attribute
           return false;
         }
         // Compare stringified chains for exact match
         return elementChain === targetChainStr;
       });
 
-      if (this.config.debug) {
-        console.log('[ContentUpdater] After filtering:', {
-          elementsAfterFilter: elements.length,
+      // If filtering by component chain yields results, use them
+      // Otherwise, fall back to unfiltered results for backward compatibility
+      if (filtered.length > 0) {
+        elements = filtered;
+        if (this.config.debug) {
+          console.log('[ContentUpdater] Using filtered elements:', {
+            elementsAfterFilter: elements.length,
+          });
+        }
+      } else if (this.config.debug) {
+        console.log('[ContentUpdater] No elements matched component chain, falling back to all elements:', {
+          fallbackCount: elements.length,
         });
       }
     }
