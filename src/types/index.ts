@@ -88,6 +88,7 @@ export type FieldType =
 interface FieldUpdateBase {
   entryId: string;
   fieldApiId: string;
+  componentChain?: ComponentChainLink[];
   updateId?: string;
 }
 
