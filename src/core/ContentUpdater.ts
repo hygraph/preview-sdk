@@ -12,6 +12,7 @@ import type {
   RichTextNode,
   AssetData,
   ComponentData,
+  ComponentChainLink,
   LocationData,
   JsonValue,
   RelationUpdateValue,
@@ -35,8 +36,9 @@ export class ContentUpdater {
     }
 
     try {
-      // Debounce updates
-      const updateKey = `${update.entryId}:${update.fieldApiId}`;
+      // Debounce updates - include component chain in key for uniqueness
+      const chainKey = update.componentChain ? JSON.stringify(update.componentChain) : '';
+      const updateKey = `${update.entryId}:${update.fieldApiId}:${chainKey}`;
       this.updateQueue.set(updateKey, update);
 
       // Wait for debounce delay
@@ -51,8 +53,8 @@ export class ContentUpdater {
       // Remove from queue
       this.updateQueue.delete(updateKey);
 
-      // Find target elements
-      const elements = this.findElements(update.entryId, update.fieldApiId);
+      // Find target elements (with optional component chain filtering)
+      const elements = this.findElements(update.entryId, update.fieldApiId, update.componentChain);
       if (elements.length === 0) {
         return { success: false, error: 'No matching elements found' };
       }
@@ -100,9 +102,7 @@ export class ContentUpdater {
     this.updateQueue.clear();
   }
 
-  private findElements(entryId: string, fieldApiId?: string): HTMLElement[] {
-    const elements: HTMLElement[] = [];
-
+  private findElements(entryId: string, fieldApiId?: string, componentChain?: ComponentChainLink[]): HTMLElement[] {
     // Build selector
     let selector = `[data-hygraph-entry-id="${entryId}"]`;
     if (fieldApiId) {
@@ -110,7 +110,61 @@ export class ContentUpdater {
     }
 
     const found = document.querySelectorAll<HTMLElement>(selector);
-    elements.push(...Array.from(found));
+    let elements = Array.from(found);
+
+    if (this.config.debug) {
+      console.log('[ContentUpdater] findElements:', {
+        selector,
+        foundCount: elements.length,
+        componentChain,
+      });
+    }
+
+    // Filter by component chain if provided
+    if (componentChain && componentChain.length > 0) {
+      const targetChainStr = JSON.stringify(componentChain);
+
+      if (this.config.debug) {
+        console.log('[ContentUpdater] Filtering by component chain:', {
+          targetChainStr,
+          elementsBeforeFilter: elements.length,
+        });
+      }
+
+      const filtered = elements.filter((element) => {
+        const elementChain = element.getAttribute('data-hygraph-component-chain');
+
+        if (this.config.debug) {
+          console.log('[ContentUpdater] Comparing chains:', {
+            target: targetChainStr,
+            element: elementChain,
+            matches: elementChain === targetChainStr,
+          });
+        }
+
+        if (!elementChain) {
+          // Element has no component chain attribute
+          return false;
+        }
+        // Compare stringified chains for exact match
+        return elementChain === targetChainStr;
+      });
+
+      // If filtering by component chain yields results, use them
+      // Otherwise, fall back to unfiltered results for backward compatibility
+      if (filtered.length > 0) {
+        elements = filtered;
+        if (this.config.debug) {
+          console.log('[ContentUpdater] Using filtered elements:', {
+            elementsAfterFilter: elements.length,
+          });
+        }
+      } else if (this.config.debug) {
+        console.log('[ContentUpdater] No elements matched component chain, falling back to all elements:', {
+          fallbackCount: elements.length,
+        });
+      }
+    }
 
     return elements;
   }
