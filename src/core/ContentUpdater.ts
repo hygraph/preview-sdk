@@ -210,6 +210,10 @@ export class ContentUpdater {
         await this.updateComponentField(element, update.newValue);
         break;
 
+      case 'COMPONENT_ARRAY':
+        await this.updateComponentArrayField(element, update.newValue);
+        break;
+
       case 'JSON':
         this.updateJsonField(element, update.newValue);
         break;
@@ -415,6 +419,58 @@ export class ContentUpdater {
       }
     } catch (error) {
       console.error('[ContentUpdater] Component update failed:', error);
+      throw error;
+    }
+  }
+
+  private async updateComponentArrayField(element: HTMLElement, componentArray: ComponentData[]): Promise<void> {
+    if (!Array.isArray(componentArray)) return;
+
+    try {
+      if (this.config.debug) {
+        console.log('[ContentUpdater] Updating component array:', {
+          elementTag: element.tagName,
+          componentCount: componentArray.length,
+        });
+      }
+
+      // For component arrays, we need to update the entire container
+      // The best approach is to use morphdom for efficient DOM diffing
+      // If morphdom is not available, we fall back to innerHTML replacement
+
+      // Build HTML for all components
+      const arrayHtml = componentArray
+        .map((componentData) => this.renderComponent(componentData))
+        .join('');
+
+      if (this.hasMorphdom()) {
+        // Create a temporary container with the new HTML
+        const tempElement = document.createElement(element.tagName);
+        tempElement.innerHTML = arrayHtml;
+
+        // Copy attributes from original element to preserve data attributes
+        Array.from(element.attributes).forEach(attr => {
+          if (attr.name.startsWith('data-hygraph')) {
+            tempElement.setAttribute(attr.name, attr.value);
+          }
+        });
+
+        // Use morphdom to efficiently update the DOM
+        window.morphdom?.(element, tempElement);
+
+        if (this.config.debug) {
+          console.log('[ContentUpdater] Component array updated using morphdom');
+        }
+      } else {
+        // Fallback to innerHTML replacement
+        element.innerHTML = arrayHtml;
+
+        if (this.config.debug) {
+          console.log('[ContentUpdater] Component array updated using innerHTML');
+        }
+      }
+    } catch (error) {
+      console.error('[ContentUpdater] Component array update failed:', error);
       throw error;
     }
   }

@@ -80,6 +80,7 @@ export type FieldType =
   | 'COLOR'
   | 'ASSET'
   | 'COMPONENT'
+  | 'COMPONENT_ARRAY'
   | 'RELATION'
   | 'ENUMERATION';
 
@@ -106,6 +107,7 @@ export type FieldUpdate =
   | (FieldUpdateBase & { fieldType: 'LOCATION'; newValue: LocationData })
   | (FieldUpdateBase & { fieldType: 'COLOR'; newValue: string })
   | (FieldUpdateBase & { fieldType: 'COMPONENT'; newValue: ComponentData })
+  | (FieldUpdateBase & { fieldType: 'COMPONENT_ARRAY'; newValue: ComponentData[] })
   | (FieldUpdateBase & { fieldType: 'JSON'; newValue: JsonValue })
   | (FieldUpdateBase & { fieldType: 'RELATION'; newValue: RelationUpdateValue });
 
