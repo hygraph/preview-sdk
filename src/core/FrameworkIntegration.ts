@@ -176,8 +176,8 @@ export class FrameworkIntegration {
     const router = this.getNextjsRouter();
 
     // Next.js App Router (13+) - has refresh() method
-    if (router && typeof (router as any).refresh === 'function') {
-      const refresh = (router as any).refresh.bind(router);
+    if (router && typeof (router as { refresh?: () => void }).refresh === 'function') {
+      const refresh = (router as { refresh: () => void }).refresh.bind(router);
       return () => {
         console.log('[FrameworkIntegration] Using Next.js App Router refresh()');
         refresh();

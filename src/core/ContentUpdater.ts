@@ -217,7 +217,7 @@ export class ContentUpdater {
         await this.updateComponentField(element, update.newValue);
         break;
 
-      case 'COMPONENT_ARRAY':
+      case 'COMPONENT_ARRAY': {
         // Component array changes are structural (reordering, add/remove)
         // Since Studio doesn't autosave, we can't refresh from API - we need to update DOM directly
         console.log('[ContentUpdater] COMPONENT_ARRAY change detected, reordering DOM elements');
@@ -225,6 +225,7 @@ export class ContentUpdater {
         const arrayValue = update.transformedValue ?? update.newValue;
         await this.reorderComponentArray(element, arrayValue);
         break;
+      }
 
       case 'JSON':
         this.updateJsonField(element, update.newValue);
