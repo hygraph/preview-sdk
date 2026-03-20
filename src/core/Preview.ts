@@ -364,6 +364,7 @@ export class Preview {
     } else {
       // Use built-in ContentUpdater only when no custom handler is provided
       console.log('[Preview] Using built-in ContentUpdater');
+      console.log('[Preview] About to call contentUpdater.updateField with:', message);
       await this.contentUpdater.updateField(message);
 
       // Note: Field updates happen automatically via ContentUpdater

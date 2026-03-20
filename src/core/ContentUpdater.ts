@@ -31,6 +31,13 @@ export class ContentUpdater {
    * Update a single field with new content
    */
   async updateField(update: FieldUpdate): Promise<UpdateResult> {
+    console.log('[ContentUpdater] updateField called:', {
+      entryId: update.entryId,
+      fieldApiId: update.fieldApiId,
+      fieldType: update.fieldType,
+      componentChain: update.componentChain,
+    });
+
     if (this.isDestroyed) {
       return { success: false, error: 'ContentUpdater is destroyed' };
     }
@@ -209,6 +216,16 @@ export class ContentUpdater {
       case 'COMPONENT':
         await this.updateComponentField(element, update.newValue);
         break;
+
+      case 'COMPONENT_ARRAY': {
+        // Component array changes are structural (reordering, add/remove)
+        // Since Studio doesn't autosave, we can't refresh from API - we need to update DOM directly
+        console.log('[ContentUpdater] COMPONENT_ARRAY change detected, reordering DOM elements');
+
+        const arrayValue = update.transformedValue ?? update.newValue;
+        await this.reorderComponentArray(element, arrayValue);
+        break;
+      }
 
       case 'JSON':
         this.updateJsonField(element, update.newValue);
@@ -419,6 +436,7 @@ export class ContentUpdater {
     }
   }
 
+
   private updateJsonField(element: HTMLElement, jsonData: JsonValue): void {
     if (jsonData === null || jsonData === undefined) return;
 
@@ -496,12 +514,98 @@ export class ContentUpdater {
     }
   }
 
+  /**
+   * Reorder component array by moving existing DOM elements
+   * This preserves the React-rendered HTML structure and styling
+   */
+  private async reorderComponentArray(container: HTMLElement, components: ComponentData[]): Promise<void> {
+    if (!Array.isArray(components)) {
+      console.warn('[ContentUpdater] Invalid components array');
+      return;
+    }
+
+    // Handle empty array - clear the container
+    if (components.length === 0) {
+      console.log('[ContentUpdater] Empty component array, clearing container');
+      container.innerHTML = '';
+      return;
+    }
+
+    console.log('[ContentUpdater] Reordering', components.length, 'components');
+
+    // Get all direct children that look like React-rendered components
+    const existingElements = Array.from(container.children) as HTMLElement[];
+
+    // Create a map of component ID to DOM element
+    const elementMap = new Map<string, HTMLElement>();
+
+    existingElements.forEach(el => {
+      // Extract component instance ID from data-hygraph-component-chain attribute
+      // Format: [{"fieldApiId":"content","instanceId":"cm123abc"}]
+      const componentChainAttr = el.getAttribute('data-hygraph-component-chain');
+
+      if (componentChainAttr) {
+        try {
+          const componentChain = JSON.parse(componentChainAttr);
+          if (Array.isArray(componentChain) && componentChain.length > 0) {
+            const instanceId = componentChain[componentChain.length - 1]?.instanceId;
+            if (instanceId) {
+              elementMap.set(instanceId, el);
+              console.log('[ContentUpdater] Mapped component instance', instanceId, 'to DOM element');
+            }
+          }
+        } catch (e) {
+          console.warn('[ContentUpdater] Failed to parse component chain:', componentChainAttr);
+        }
+      }
+    });
+
+    // Reorder elements based on the new component order
+    const fragment = document.createDocumentFragment();
+    let reorderedCount = 0;
+
+    components.forEach((component, index) => {
+      const componentId = component.id;
+
+      if (!componentId) {
+        console.warn('[ContentUpdater] Component missing ID at index', index);
+        return;
+      }
+
+      const element = elementMap.get(componentId);
+
+      if (element) {
+        // Move existing element to fragment (in new order)
+        fragment.appendChild(element);
+        reorderedCount++;
+      } else {
+        console.warn('[ContentUpdater] Could not find element for component', componentId);
+      }
+    });
+
+    // Replace all children with reordered elements
+    if (reorderedCount > 0) {
+      container.innerHTML = ''; // Clear container
+      container.appendChild(fragment); // Add reordered elements
+
+      console.log('[ContentUpdater] Successfully reordered', reorderedCount, 'elements');
+    } else {
+      console.warn('[ContentUpdater] Could not match any components to DOM elements');
+    }
+  }
+
   private renderComponent(componentData: ComponentData): string {
-    // Basic component rendering - this would be more sophisticated in practice
+    // Generic component rendering - not used for COMPONENT_ARRAY anymore (we reorder instead)
+    // Kept for backward compatibility with COMPONENT field type
     const typename = componentData.__typename;
     const fields = Object.entries(componentData)
       .filter(([key]) => key !== '__typename' && key !== 'id')
-      .map(([key, value]) => `<div data-field="${key}">${this.escapeHtml(this.formatComponentValue(value))}</div>`)
+      .map(([key, value]) => {
+        const formatted = this.formatComponentValue(value);
+        // Check if the formatted value is HTML (contains tags) - if so, don't escape
+        const isHTML = formatted.includes('<') && formatted.includes('>');
+        return `<div data-field="${key}">${isHTML ? formatted : this.escapeHtml(formatted)}</div>`;
+      })
       .join('');
 
     return `<div data-component="${typename}">${fields}</div>`;
@@ -520,11 +624,32 @@ export class ContentUpdater {
       return String(value);
     }
 
+    // Check if this is a RichText multi-format object
+    if (this.isRichTextFormats(value)) {
+      // Use HTML format for rendering
+      return value.html || '';
+    }
+
     try {
       return JSON.stringify(value);
     } catch {
       return String(value);
     }
+  }
+
+  /**
+   * Check if a value is a RichText multi-format object
+   * These objects have html, markdown, text, and ast properties
+   */
+  private isRichTextFormats(value: unknown): value is { html: string; markdown: string; text: string; ast: unknown } {
+    return (
+      value !== null &&
+      typeof value === 'object' &&
+      'html' in value &&
+      'markdown' in value &&
+      'text' in value &&
+      'ast' in value
+    );
   }
 
   private escapeHtml(text: string): string {
