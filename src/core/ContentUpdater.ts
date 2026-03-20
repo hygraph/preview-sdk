@@ -519,8 +519,15 @@ export class ContentUpdater {
    * This preserves the React-rendered HTML structure and styling
    */
   private async reorderComponentArray(container: HTMLElement, components: ComponentData[]): Promise<void> {
-    if (!Array.isArray(components) || components.length === 0) {
-      console.warn('[ContentUpdater] No components to reorder');
+    if (!Array.isArray(components)) {
+      console.warn('[ContentUpdater] Invalid components array');
+      return;
+    }
+
+    // Handle empty array - clear the container
+    if (components.length === 0) {
+      console.log('[ContentUpdater] Empty component array, clearing container');
+      container.innerHTML = '';
       return;
     }
 

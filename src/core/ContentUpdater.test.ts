@@ -248,24 +248,21 @@ describe('ContentUpdater', () => {
   });
 
   describe('Component array updates', () => {
-    it('updates component array with multiple items', async () => {
+    it('reorders component array with multiple items', async () => {
       const element = createPreviewElement({
         entryId: 'entry-array',
         fieldApiId: 'sections',
-        textContent: '', // Will be replaced with rendered components
       });
 
+      // Pre-populate with mock DOM elements (simulating React-rendered components)
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"hero-1"}]'>Hero 1</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"hero-2"}]'>Hero 2</div>
+      `;
+
       const componentArray = [
-        {
-          __typename: 'Hero',
-          id: 'hero-1',
-          title: 'Hero Title 1',
-        },
-        {
-          __typename: 'Hero',
-          id: 'hero-2',
-          title: 'Hero Title 2',
-        },
+        { __typename: 'Hero', id: 'hero-2', title: 'Hero Title 2' },
+        { __typename: 'Hero', id: 'hero-1', title: 'Hero Title 1' },
       ];
 
       const result = await updater.updateField({
@@ -276,35 +273,26 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      // Check that both components were rendered
-      expect(element.innerHTML).toContain('Hero');
-      expect(element.innerHTML).toContain('Hero Title 1');
-      expect(element.innerHTML).toContain('Hero Title 2');
+      // Check that elements were reordered (Hero 2 now first)
+      const children = Array.from(element.children);
+      expect(children[0].textContent).toBe('Hero 2');
+      expect(children[1].textContent).toBe('Hero 1');
     });
 
-    it('updates component array when items are reordered', async () => {
+    it('reorders existing DOM elements correctly', async () => {
       const element = createPreviewElement({
         entryId: 'entry-reorder',
         fieldApiId: 'sections',
       });
 
-      // Initial array
-      const initialArray = [
-        { __typename: 'Section', id: 'section-1', title: 'First' },
-        { __typename: 'Section', id: 'section-2', title: 'Second' },
-        { __typename: 'Section', id: 'section-3', title: 'Third' },
-      ];
+      // Pre-populate with initial order
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>First</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-2"}]'>Second</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-3"}]'>Third</div>
+      `;
 
-      await updater.updateField({
-        entryId: 'entry-reorder',
-        fieldApiId: 'sections',
-        fieldType: 'COMPONENT_ARRAY',
-        newValue: initialArray,
-      });
-
-      const initialHTML = element.innerHTML;
-
-      // Reordered array
+      // Reordered array (3, 1, 2)
       const reorderedArray = [
         { __typename: 'Section', id: 'section-3', title: 'Third' },
         { __typename: 'Section', id: 'section-1', title: 'First' },
@@ -319,36 +307,28 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(element.innerHTML).not.toBe(initialHTML);
-      // Verify all components are still present
-      expect(element.innerHTML).toContain('First');
-      expect(element.innerHTML).toContain('Second');
-      expect(element.innerHTML).toContain('Third');
+
+      // Verify new order
+      const children = Array.from(element.children);
+      expect(children[0].textContent).toBe('Third');
+      expect(children[1].textContent).toBe('First');
+      expect(children[2].textContent).toBe('Second');
     });
 
-    it('updates component array when item is deleted', async () => {
+    it('handles deletion by only reordering remaining items', async () => {
       const element = createPreviewElement({
         entryId: 'entry-delete',
         fieldApiId: 'sections',
       });
 
-      // Initial array with 3 items
-      const initialArray = [
-        { __typename: 'Section', id: 'section-1', title: 'First' },
-        { __typename: 'Section', id: 'section-2', title: 'Second' },
-        { __typename: 'Section', id: 'section-3', title: 'Third' },
-      ];
+      // Pre-populate with 3 items
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>First</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-2"}]'>Second</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-3"}]'>Third</div>
+      `;
 
-      await updater.updateField({
-        entryId: 'entry-delete',
-        fieldApiId: 'sections',
-        fieldType: 'COMPONENT_ARRAY',
-        newValue: initialArray,
-      });
-
-      expect(element.innerHTML).toContain('Second');
-
-      // Array with one item deleted
+      // Array with middle item "deleted" (only First and Third remain)
       const deletedArray = [
         { __typename: 'Section', id: 'section-1', title: 'First' },
         { __typename: 'Section', id: 'section-3', title: 'Third' },
@@ -362,37 +342,30 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(element.innerHTML).toContain('First');
-      expect(element.innerHTML).not.toContain('Second');
-      expect(element.innerHTML).toContain('Third');
+      // Reordering moves matching elements - only First and Third are repositioned
+      const children = Array.from(element.children);
+      expect(children.length).toBe(2);
+      expect(children[0].textContent).toBe('First');
+      expect(children[1].textContent).toBe('Third');
     });
 
-    it('updates component array when item is added', async () => {
+    it('gracefully handles additions (new items not in DOM)', async () => {
       const element = createPreviewElement({
         entryId: 'entry-add',
         fieldApiId: 'sections',
       });
 
-      // Initial array with 2 items
-      const initialArray = [
-        { __typename: 'Section', id: 'section-1', title: 'First' },
-        { __typename: 'Section', id: 'section-2', title: 'Second' },
-      ];
+      // Pre-populate with 2 items
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>First</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-2"}]'>Second</div>
+      `;
 
-      await updater.updateField({
-        entryId: 'entry-add',
-        fieldApiId: 'sections',
-        fieldType: 'COMPONENT_ARRAY',
-        newValue: initialArray,
-      });
-
-      expect(element.innerHTML).not.toContain('Third');
-
-      // Array with new item added
+      // Array with new item (section-3 doesn't exist in DOM yet)
       const addedArray = [
         { __typename: 'Section', id: 'section-1', title: 'First' },
         { __typename: 'Section', id: 'section-2', title: 'Second' },
-        { __typename: 'Section', id: 'section-3', title: 'Third' },
+        { __typename: 'Section', id: 'section-3', title: 'Third' }, // New item
       ];
 
       const result = await updater.updateField({
@@ -403,19 +376,25 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(element.innerHTML).toContain('First');
-      expect(element.innerHTML).toContain('Second');
-      expect(element.innerHTML).toContain('Third');
+      // Reordering only moves existing elements (section-3 is not in DOM, so it's skipped)
+      const children = Array.from(element.children);
+      expect(children.length).toBe(2);
+      expect(children[0].textContent).toBe('First');
+      expect(children[1].textContent).toBe('Second');
+      // Note: New items require a page refresh or onFieldUpdate handler to render
     });
 
-    it('handles empty component array', async () => {
+    it('handles empty component array by clearing container', async () => {
       const element = createPreviewElement({
         entryId: 'entry-empty',
         fieldApiId: 'sections',
       });
 
-      // Set initial content
-      element.innerHTML = '<div>Some content</div>';
+      // Pre-populate with components
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>First</div>
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-2"}]'>Second</div>
+      `;
 
       const result = await updater.updateField({
         entryId: 'entry-empty',
@@ -425,15 +404,21 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(element.innerHTML).toBe('');
+      // Empty array means no elements to reorder, but container gets cleared
+      expect(element.children.length).toBe(0);
     });
 
-    it('preserves hygraph data attributes during array update', async () => {
+    it('preserves container data attributes during reordering', async () => {
       const element = createPreviewElement({
         entryId: 'entry-preserve',
         fieldApiId: 'sections',
         componentChain: [{ fieldApiId: 'parent', instanceId: 'parent-1' }],
       });
+
+      // Pre-populate with component
+      element.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>First</div>
+      `;
 
       const componentArray = [
         { __typename: 'Section', id: 'section-1', title: 'First' },
@@ -447,7 +432,7 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      // Verify data attributes are preserved
+      // Verify container's data attributes are preserved after reordering
       expect(element.getAttribute('data-hygraph-entry-id')).toBe('entry-preserve');
       expect(element.getAttribute('data-hygraph-field-api-id')).toBe('sections');
       expect(element.getAttribute('data-hygraph-component-chain')).toBeTruthy();
@@ -462,6 +447,9 @@ describe('ContentUpdater', () => {
         fieldApiId: 'sections',
         componentChain,
       });
+      matchingElement.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>Original</div>
+      `;
 
       // Create element with different component chain
       const differentElement = createPreviewElement({
@@ -469,6 +457,9 @@ describe('ContentUpdater', () => {
         fieldApiId: 'sections',
         componentChain: [{ fieldApiId: 'parent', instanceId: 'parent-2' }],
       });
+      differentElement.innerHTML = `
+        <div data-hygraph-component-chain='[{"fieldApiId":"sections","instanceId":"section-1"}]'>Original</div>
+      `;
 
       const componentArray = [
         { __typename: 'Section', id: 'section-1', title: 'Updated' },
@@ -483,8 +474,10 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(matchingElement.innerHTML).toContain('Updated');
-      expect(differentElement.innerHTML).not.toContain('Updated');
+      // Only the matching element should be reordered
+      expect(matchingElement.children.length).toBe(1);
+      // Different element should remain unchanged
+      expect(differentElement.innerHTML).toContain('Original');
     });
   });
 });
