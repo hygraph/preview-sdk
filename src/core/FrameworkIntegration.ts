@@ -56,9 +56,11 @@ export class FrameworkIntegration {
   async refresh(): Promise<void> {
     const refreshFn = this.getRefreshFunction();
     if (refreshFn) {
+      console.log('[FrameworkIntegration] Using framework-specific refresh');
       await refreshFn();
     } else {
       // Fallback to page reload
+      console.log('[FrameworkIntegration] No framework-specific refresh found, using window.location.reload()');
       window.location.reload();
     }
   }
@@ -172,17 +174,32 @@ export class FrameworkIntegration {
 
   private getNextjsRefresh(): (() => void) | null {
     const router = this.getNextjsRouter();
+
+    // Next.js App Router (13+) - has refresh() method
+    if (router && typeof (router as any).refresh === 'function') {
+      const refresh = (router as any).refresh.bind(router);
+      return () => {
+        console.log('[FrameworkIntegration] Using Next.js App Router refresh()');
+        refresh();
+      };
+    }
+
+    // Next.js Pages Router - has replace() method
     if (router && typeof router.replace === 'function') {
       const replace = router.replace.bind(router);
       return () => {
+        console.log('[FrameworkIntegration] Using Next.js Pages Router replace()');
         // Use router.replace to refresh the current page
         replace(router.asPath || window.location.pathname);
       };
     }
 
-    // Fallback: try to use Next.js global refresh
+    // Fallback: try to use window.location.reload
     if (typeof window.location.reload === 'function') {
-      return () => window.location.reload();
+      return () => {
+        console.log('[FrameworkIntegration] Falling back to window.location.reload()');
+        window.location.reload();
+      };
     }
 
     return null;
