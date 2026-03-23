@@ -85,10 +85,10 @@ export class Preview {
   }
 
   /**
-   * Get current SDK version
+   * Get current SDK version — sourced from package.json at build time via PKG_VERSION
    */
   getVersion(): string {
-    return '1.0.5';
+    return __PKG_VERSION__;
   }
 
   /**

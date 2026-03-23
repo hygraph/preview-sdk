@@ -31,12 +31,14 @@ export class ContentUpdater {
    * Update a single field with new content
    */
   async updateField(update: FieldUpdate): Promise<UpdateResult> {
-    console.log('[ContentUpdater] updateField called:', {
-      entryId: update.entryId,
-      fieldApiId: update.fieldApiId,
-      fieldType: update.fieldType,
-      componentChain: update.componentChain,
-    });
+    if (this.config.debug) {
+      console.log('[ContentUpdater] updateField called:', {
+        entryId: update.entryId,
+        fieldApiId: update.fieldApiId,
+        fieldType: update.fieldType,
+        componentChain: update.componentChain,
+      });
+    }
 
     if (this.isDestroyed) {
       return { success: false, error: 'ContentUpdater is destroyed' };
@@ -157,8 +159,6 @@ export class ContentUpdater {
         return elementChain === targetChainStr;
       });
 
-      // If filtering by component chain yields results, use them
-      // Otherwise, fall back to unfiltered results for backward compatibility
       if (filtered.length > 0) {
         elements = filtered;
         if (this.config.debug) {
@@ -166,10 +166,30 @@ export class ContentUpdater {
             elementsAfterFilter: elements.length,
           });
         }
-      } else if (this.config.debug) {
-        console.log('[ContentUpdater] No elements matched component chain, falling back to all elements:', {
-          fallbackCount: elements.length,
-        });
+      } else {
+        // Check if any elements actually have component chain attributes.
+        // If they do but none matched, we have a genuine mismatch (e.g. new unsaved
+        // component with a synthetic instanceId) — don't fall back to all elements
+        // as that would corrupt unrelated components.
+        // If no elements have chain attributes, fall back for backward compatibility
+        // with frontends that don't set data-hygraph-component-chain.
+        const anyHaveChain = elements.some(
+          (el) => el.getAttribute('data-hygraph-component-chain') !== null
+        );
+
+        if (anyHaveChain) {
+          if (this.config.debug) {
+            console.log('[ContentUpdater] Component chain mismatch, skipping update:', {
+              targetChain: targetChainStr,
+              existingElements: elements.length,
+            });
+          }
+          elements = [];
+        } else if (this.config.debug) {
+          console.log('[ContentUpdater] No elements have component chains, falling back to all elements:', {
+            fallbackCount: elements.length,
+          });
+        }
       }
     }
 
@@ -220,7 +240,9 @@ export class ContentUpdater {
       case 'COMPONENT_ARRAY': {
         // Component array changes are structural (reordering, add/remove)
         // Since Studio doesn't autosave, we can't refresh from API - we need to update DOM directly
-        console.log('[ContentUpdater] COMPONENT_ARRAY change detected, reordering DOM elements');
+        if (this.config.debug) {
+          console.log('[ContentUpdater] COMPONENT_ARRAY change detected, reordering DOM elements');
+        }
 
         const arrayValue = update.transformedValue ?? update.newValue;
         await this.reorderComponentArray(element, arrayValue);
@@ -526,12 +548,16 @@ export class ContentUpdater {
 
     // Handle empty array - clear the container
     if (components.length === 0) {
-      console.log('[ContentUpdater] Empty component array, clearing container');
+      if (this.config.debug) {
+        console.log('[ContentUpdater] Empty component array, clearing container');
+      }
       container.innerHTML = '';
       return;
     }
 
-    console.log('[ContentUpdater] Reordering', components.length, 'components');
+    if (this.config.debug) {
+      console.log('[ContentUpdater] Reordering', components.length, 'components');
+    }
 
     // Get all direct children that look like React-rendered components
     const existingElements = Array.from(container.children) as HTMLElement[];
@@ -551,7 +577,9 @@ export class ContentUpdater {
             const instanceId = componentChain[componentChain.length - 1]?.instanceId;
             if (instanceId) {
               elementMap.set(instanceId, el);
-              console.log('[ContentUpdater] Mapped component instance', instanceId, 'to DOM element');
+              if (this.config.debug) {
+                console.log('[ContentUpdater] Mapped component instance', instanceId, 'to DOM element');
+              }
             }
           }
         } catch (e) {
@@ -578,8 +606,8 @@ export class ContentUpdater {
         // Move existing element to fragment (in new order)
         fragment.appendChild(element);
         reorderedCount++;
-      } else {
-        console.warn('[ContentUpdater] Could not find element for component', componentId);
+      } else if (this.config.debug) {
+        console.log('[ContentUpdater] New component not in DOM, skipping:', componentId);
       }
     });
 
@@ -588,9 +616,17 @@ export class ContentUpdater {
       container.innerHTML = ''; // Clear container
       container.appendChild(fragment); // Add reordered elements
 
-      console.log('[ContentUpdater] Successfully reordered', reorderedCount, 'elements');
+      if (this.config.debug) {
+        console.log('[ContentUpdater] Successfully reordered', reorderedCount, 'elements');
+      }
     } else {
       console.warn('[ContentUpdater] Could not match any components to DOM elements');
+    }
+
+    // Log skipped new components (they'll appear after save + refresh)
+    const unmatchedCount = components.length - reorderedCount;
+    if (unmatchedCount > 0 && this.config.debug) {
+      console.log('[ContentUpdater]', unmatchedCount, 'new component(s) not in DOM — will appear after save');
     }
   }
 

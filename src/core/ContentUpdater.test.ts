@@ -349,7 +349,7 @@ describe('ContentUpdater', () => {
       expect(children[1].textContent).toBe('Third');
     });
 
-    it('gracefully handles additions (new items not in DOM)', async () => {
+    it('skips new items not in DOM without corrupting existing components', async () => {
       const element = createPreviewElement({
         entryId: 'entry-add',
         fieldApiId: 'sections',
@@ -376,12 +376,11 @@ describe('ContentUpdater', () => {
       });
 
       expect(result.success).toBe(true);
-      // Reordering only moves existing elements (section-3 is not in DOM, so it's skipped)
+      // New item is skipped — only existing elements remain, in correct order
       const children = Array.from(element.children);
       expect(children.length).toBe(2);
       expect(children[0].textContent).toBe('First');
       expect(children[1].textContent).toBe('Second');
-      // Note: New items require a page refresh or onFieldUpdate handler to render
     });
 
     it('handles empty component array by clearing container', async () => {
