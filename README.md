@@ -415,6 +415,94 @@ If you prefer not to use the helper functions, you can write the attributes dire
 
 > **Note:** Always use double quotes inside the JSON string and single quotes for the HTML attribute value to ensure valid HTML.
 
+### Live Preview for Component Arrays
+
+> **New in v1.0.7**
+
+When `sync.fieldUpdate` is enabled, the SDK can live-update component arrays (modular content) in the preview without a full page refresh. This supports:
+
+- **Reordering** (drag-and-drop) — existing DOM elements are moved in-place
+- **Deletion** — removed components disappear immediately
+- **Addition** — new unsaved components are skipped until saved and the page is refreshed
+
+#### Setting Up a Component Array Container
+
+For the SDK to reorder components, it needs two things:
+
+1. A **container element** with `data-hygraph-entry-id` and `data-hygraph-field-api-id` pointing to the component array field
+2. **Direct children** with `data-hygraph-component-chain` attributes so the SDK can identify each component instance
+
+```tsx
+import {
+  createPreviewAttributes,
+  createComponentChainLink,
+} from '@hygraph/preview-sdk/core';
+
+function ArticlePage({ article }) {
+  return (
+    <main>
+      <h1 {...createPreviewAttributes({ entryId: article.id, fieldApiId: 'title' })}>
+        {article.title}
+      </h1>
+
+      {/* Container element — the SDK targets this for reordering */}
+      <div
+        {...createPreviewAttributes({
+          entryId: article.id,
+          fieldApiId: 'content',      // Must match the component array field API ID
+        })}
+      >
+        {article.content.map((block) => {
+          const componentChain = [
+            createComponentChainLink('content', block.id),
+          ];
+
+          return (
+            // Wrapper with component chain — SDK matches these to reorder
+            <div
+              key={block.id}
+              data-hygraph-component-chain={JSON.stringify(componentChain)}
+            >
+              <ContentBlock
+                block={block}
+                articleId={article.id}
+                componentChain={componentChain}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </main>
+  );
+}
+```
+
+#### How It Works
+
+When Studio detects a structural change (reorder, add, delete) in a component array, it sends a `COMPONENT_ARRAY` field update. The SDK then:
+
+1. Finds the container element via `data-hygraph-entry-id` + `data-hygraph-field-api-id`
+2. Reads `data-hygraph-component-chain` from each direct child to build a component ID to DOM element map
+3. Reorders the existing DOM elements to match the new array order
+4. For deletions, elements not in the new array are removed
+5. For additions, new unsaved components are skipped — they appear after saving and refreshing the page
+
+#### RichText Fields Inside Components
+
+When rendering RichText fields as HTML inside components, add `data-hygraph-rich-text-format="html"` so the SDK knows which format to use for live field-level updates:
+
+```tsx
+<div
+  {...createPreviewAttributes({
+    entryId: articleId,
+    fieldApiId: 'text',
+    componentChain,
+  })}
+  data-hygraph-rich-text-format="html"
+  dangerouslySetInnerHTML={{ __html: block.text.html }}
+/>
+```
+
 ## Framework Guides
 
 - [Next.js App Router](docs/frameworks/nextjs-app-router.md)
@@ -542,6 +630,12 @@ Each example includes a complete recipe application with schema setup instructio
 - Real-time field updates are optional and disabled by default
 - Enable with `sync={{ fieldUpdate: true }}` if needed
 - Note: Most users only need the save event for full page refresh
+
+**Component array reordering not working?**
+- Ensure the **container element** has `data-hygraph-entry-id` and `data-hygraph-field-api-id` matching the component array field
+- Each direct child must have `data-hygraph-component-chain` with the component's instance ID
+- Enable `debug={true}` to see `[ContentUpdater] COMPONENT_ARRAY` logs
+- New unsaved components are skipped — they appear after saving and refreshing. Reordering and deletion of existing components work immediately
 
 Need more help? Open an issue or start a discussion in the repository.
 

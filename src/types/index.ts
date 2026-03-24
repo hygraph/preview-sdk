@@ -80,6 +80,7 @@ export type FieldType =
   | 'COLOR'
   | 'ASSET'
   | 'COMPONENT'
+  | 'COMPONENT_ARRAY'
   | 'RELATION'
   | 'ENUMERATION';
 
@@ -106,6 +107,7 @@ export type FieldUpdate =
   | (FieldUpdateBase & { fieldType: 'LOCATION'; newValue: LocationData })
   | (FieldUpdateBase & { fieldType: 'COLOR'; newValue: string })
   | (FieldUpdateBase & { fieldType: 'COMPONENT'; newValue: ComponentData })
+  | (FieldUpdateBase & { fieldType: 'COMPONENT_ARRAY'; newValue: ComponentData[]; transformedValue?: ComponentData[] })
   | (FieldUpdateBase & { fieldType: 'JSON'; newValue: JsonValue })
   | (FieldUpdateBase & { fieldType: 'RELATION'; newValue: RelationUpdateValue });
 
@@ -221,6 +223,7 @@ export interface PreviewConfig {
   mode?: 'auto' | 'iframe' | 'standalone'; // Force specific mode
   onFieldFocus?: (fieldApiId: string) => void; // Custom field focus handler
   onFieldUpdate?: (update: FieldUpdate) => void; // Custom field update handler
+  onRefresh?: () => void | Promise<void>; // Custom refresh handler (for Next.js App Router, etc.)
 
   // Studio sync capabilities
   sync?: {

@@ -1,6 +1,6 @@
 {
   "name": "@hygraph/preview-sdk",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Content preview SDK for seamless real-time content editing in Hygraph CMS",
   "publishConfig": {
     "access": "public"
@@ -79,13 +79,13 @@
     "@typescript-eslint/parser": "^6.0.0",
     "@vitest/ui": "^1.6.1",
     "eslint": "^8.0.0",
+    "jsdom": "^24.0.0",
     "react": "^19.1.0",
     "terser": "^5.44.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0",
     "vite-plugin-dts": "^3.0.0",
-    "vitest": "^1.6.1",
-    "jsdom": "^24.0.0"
+    "vitest": "^1.6.1"
   },
   "dependencies": {
     "morphdom": "^2.7.0"

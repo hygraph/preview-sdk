@@ -85,10 +85,10 @@ export class Preview {
   }
 
   /**
-   * Get current SDK version
+   * Get current SDK version — sourced from package.json at build time via PKG_VERSION
    */
   getVersion(): string {
-    return '1.0.5';
+    return __PKG_VERSION__;
   }
 
   /**
@@ -364,6 +364,7 @@ export class Preview {
     } else {
       // Use built-in ContentUpdater only when no custom handler is provided
       console.log('[Preview] Using built-in ContentUpdater');
+      console.log('[Preview] About to call contentUpdater.updateField with:', message);
       await this.contentUpdater.updateField(message);
 
       // Note: Field updates happen automatically via ContentUpdater
