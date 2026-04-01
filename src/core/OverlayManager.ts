@@ -181,7 +181,10 @@ export class OverlayManager {
       return;
     }
 
-    const hygraphElement = target.closest('[data-hygraph-entry-id]') as HTMLElement;
+    // Find closest element with field-api-id OR entry-id
+    const hygraphElement = target.closest(
+      '[data-hygraph-field-api-id], [data-hygraph-entry-id]'
+    ) as HTMLElement | null;
 
     if (hygraphElement && hygraphElement !== this.currentTarget) {
       // Clear any pending hover timeout
@@ -191,8 +194,14 @@ export class OverlayManager {
       }
 
       // Get registered element data
-      const entryId = hygraphElement.getAttribute('data-hygraph-entry-id');
       const fieldApiId = hygraphElement.getAttribute('data-hygraph-field-api-id');
+
+      // Get entry-id: explicit or inherited from ancestor
+      let entryId = hygraphElement.getAttribute('data-hygraph-entry-id');
+      if (!entryId) {
+        const ancestor = hygraphElement.closest('[data-hygraph-entry-id]') as HTMLElement | null;
+        entryId = ancestor?.getAttribute('data-hygraph-entry-id') ?? null;
+      }
 
       if (entryId) {
         const registeredElement: RegisteredElement = {
