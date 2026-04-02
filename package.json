@@ -9,6 +9,12 @@
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "react": ["./dist/react/index.d.ts"],
+      "core": ["./dist/core/index.d.ts"]
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
