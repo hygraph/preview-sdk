@@ -140,6 +140,7 @@ Each example runs on a different port to avoid conflicts:
 
 ## Questions?
 
-- Check the [main documentation](../docs/)
+- [Click to Edit setup](https://hygraph.com/docs/developer-guides/schema/click-to-edit)
+- [Advanced API](https://hygraph.com/docs/developer-guides/schema/click-to-edit-advanced-api)
 - Open an issue on [GitHub](https://github.com/hygraph/preview-sdk/issues)
 - Contact [Hygraph support](https://hygraph.com/support)

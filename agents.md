@@ -4,6 +4,7 @@
 - Equip AI agents to help developers add the Hygraph Preview SDK to new or existing projects.
 - Give fast answers (quick reference) plus deep context (codebase layout, examples, troubleshooting).
 - Default assumption: the developer wants clickable edit buttons in Hygraph previews with minimal setup.
+- Prefer the Hygraph [Click to Edit](https://hygraph.com/docs/developer-guides/schema/click-to-edit) docs and [Advanced API](https://hygraph.com/docs/developer-guides/schema/click-to-edit-advanced-api) for setup and API details; this file is a quick reference for the repo.
 
 ## Quick Reference
 
