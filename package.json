@@ -1,6 +1,6 @@
 {
   "name": "@hygraph/preview-sdk",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Content preview SDK for seamless real-time content editing in Hygraph CMS",
   "publishConfig": {
     "access": "public"
@@ -63,7 +63,7 @@
   "bugs": {
     "url": "https://github.com/hygraph/preview-sdk/issues"
   },
-  "homepage": "https://github.com/hygraph/preview-sdk#readme",
+  "homepage": "https://hygraph.com/docs/developer-guides/schema/click-to-edit",
   "peerDependencies": {
     "react": ">=16.8.0"
   },
