@@ -479,5 +479,152 @@ describe('ContentUpdater', () => {
       expect(differentElement.innerHTML).toContain('Original');
     });
   });
-});
 
+  describe('Scalar list fields', () => {
+    it('renders a whole-list binding as a comma-separated string', async () => {
+      const element = createPreviewElement({
+        entryId: 'entry-list',
+        fieldApiId: 'tags',
+        textContent: 'Original',
+      });
+
+      const result = await updater.updateField({
+        entryId: 'entry-list',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: ['one', 'two', 'three'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(element.textContent).toBe('one, two, three');
+    });
+
+    it('renders a whole-list binding into an input value', async () => {
+      const element = createPreviewElement({
+        entryId: 'entry-list-input',
+        fieldApiId: 'tags',
+        tagName: 'input',
+      }) as HTMLInputElement;
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-input',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: ['a', 'b'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(element.value).toBe('a, b');
+    });
+
+    it('renders one item per element when items are tagged with their list index', async () => {
+      const first = createPreviewElement({
+        entryId: 'entry-list-items',
+        fieldApiId: 'tags',
+        listIndex: 0,
+        tagName: 'li',
+        textContent: 'Original',
+      });
+      const second = createPreviewElement({
+        entryId: 'entry-list-items',
+        fieldApiId: 'tags',
+        listIndex: 1,
+        tagName: 'li',
+        textContent: 'Original',
+      });
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-items',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: ['one', 'two'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(first.textContent).toBe('one');
+      expect(second.textContent).toBe('two');
+    });
+
+    it('empties a tagged item whose index is no longer in the list', async () => {
+      const element = createPreviewElement({
+        entryId: 'entry-list-shrunk',
+        fieldApiId: 'tags',
+        listIndex: 1,
+        tagName: 'li',
+        textContent: 'two',
+      });
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-shrunk',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: ['one'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(element.textContent).toBe('');
+    });
+
+    it('refuses to overwrite a list container that has child elements', async () => {
+      const container = createPreviewElement({
+        entryId: 'entry-list-container',
+        fieldApiId: 'tags',
+        tagName: 'ul',
+      });
+      container.innerHTML = '<li>a</li><li>b</li>';
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-container',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: ['a', 'b', 'c'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(container.querySelectorAll('li')).toHaveLength(2);
+    });
+
+    it('renders a date list as its raw values instead of formatting the array as one date', async () => {
+      const element = createPreviewElement({
+        entryId: 'entry-list-dates',
+        fieldApiId: 'availableOn',
+      });
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-dates',
+        fieldApiId: 'availableOn',
+        fieldType: 'DATE',
+        isList: true,
+        newValue: ['2026-01-01', '2026-02-02'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(element.textContent).toBe('2026-01-01, 2026-02-02');
+    });
+
+    it('renders an empty list as an empty binding', async () => {
+      const element = createPreviewElement({
+        entryId: 'entry-list-empty',
+        fieldApiId: 'tags',
+        textContent: 'Original',
+      });
+
+      const result = await updater.updateField({
+        entryId: 'entry-list-empty',
+        fieldApiId: 'tags',
+        fieldType: 'STRING',
+        isList: true,
+        newValue: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(element.textContent).toBe('');
+    });
+  });
+
+});

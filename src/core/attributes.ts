@@ -4,10 +4,16 @@ export interface PreviewFieldOptions {
   entryId: string;
   fieldApiId?: string;
   componentChain?: ComponentChainLink[];
+  /**
+   * Index of the scalar list item this element renders. Tag one node per item with its index to
+   * have list updates patch each item individually; without it an element is treated as a binding
+   * for the whole list and receives every item joined into a single string.
+   */
+  listIndex?: number;
 }
 
 export function createPreviewAttributes(options: PreviewFieldOptions): ElementAttributes {
-  const { entryId, fieldApiId, componentChain } = options;
+  const { entryId, fieldApiId, componentChain, listIndex } = options;
 
   if (!entryId) {
     throw new Error('[Preview SDK] createPreviewAttributes requires an entryId');
@@ -24,6 +30,13 @@ export function createPreviewAttributes(options: PreviewFieldOptions): ElementAt
   const serializedChain = serializeComponentChain(componentChain);
   if (serializedChain) {
     attributes['data-hygraph-component-chain'] = serializedChain;
+  }
+
+  if (listIndex !== undefined) {
+    if (!Number.isInteger(listIndex) || listIndex < 0) {
+      throw new Error('[Preview SDK] createPreviewAttributes requires listIndex to be a non-negative integer');
+    }
+    attributes['data-hygraph-list-index'] = String(listIndex);
   }
 
   return attributes;

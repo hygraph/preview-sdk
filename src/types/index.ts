@@ -29,6 +29,15 @@ export type StudioMessage =
 export interface SDKCapabilities {
   fieldFocusSync?: boolean;  // Whether SDK wants field focus sync messages
   fieldUpdateSync?: boolean; // Whether SDK wants field update sync messages
+  /**
+   * Whether this SDK understands scalar list updates (`isList`).
+   *
+   * Studio must withhold them when this is absent. An SDK without list support writes the array
+   * straight into the bound element, which destroys the children of a container binding (a `<ul>` of
+   * `<li>` items) and renders "Invalid Date" for a Date list - and list fields sent no updates at all
+   * before this capability existed, so withholding them leaves such a page exactly as it was.
+   */
+  scalarListSync?: boolean;
   richTextFormatPreferences?: { [fieldKey: string]: RichTextFormatType }; // Format preferences per field (one format per field)
 }
 
@@ -91,13 +100,22 @@ interface FieldUpdateBase {
   fieldApiId: string;
   componentChain?: ComponentChainLink[];
   updateId?: string;
+  /** True when newValue is a scalar list (String/Int/Float/Boolean/Enumeration/Date list) */
+  isList?: boolean;
 }
 
 type TextFieldType = 'STRING' | 'ID' | 'ENUMERATION';
 type NumberFieldType = 'INT' | 'FLOAT';
 type DateFieldType = 'DATETIME' | 'DATE';
 
+/** Field types that can be declared a list in the schema, and so arrive with `isList: true` */
+type ScalarListFieldType = TextFieldType | NumberFieldType | DateFieldType | 'BOOLEAN';
+
+/** Every scalar list arrives as a flat array of primitives, whatever the field type */
+export type ScalarListValue = Array<string | number | boolean | null>;
+
 export type FieldUpdate =
+  | (FieldUpdateBase & { fieldType: ScalarListFieldType; isList: true; newValue: ScalarListValue })
   | (FieldUpdateBase & { fieldType: TextFieldType; newValue: string })
   | (FieldUpdateBase & { fieldType: 'RICHTEXT'; newValue: RichTextUpdateValue })
   | (FieldUpdateBase & { fieldType: NumberFieldType; newValue: number })
@@ -277,6 +295,8 @@ export interface ElementAttributes {
   'data-hygraph-entry-id': string;
   'data-hygraph-field-api-id'?: string;
   'data-hygraph-component-chain'?: string;
+  /** Index of a single item of a scalar list field, when the element renders one item */
+  'data-hygraph-list-index'?: string;
 }
 
 // Registered element information
@@ -308,7 +328,15 @@ export interface PreviewEvents {
     mode?: 'iframe' | 'standalone';
   }>;
   'preview:content-saved': CustomEvent<{ entryId: string; timestamp: number }>;
-  'preview:field-updated': CustomEvent<{ entryId: string; fieldApiId: string; newValue: FieldUpdateValue }>;
+  'preview:field-updated': CustomEvent<{
+    entryId: string;
+    fieldApiId: string;
+    newValue: FieldUpdateValue;
+    transformedValue?: ComponentData[];
+    componentChain?: ComponentChainLink[];
+    isList?: boolean;
+    fieldType?: FieldType;
+  }>;
   'preview:update-failed': CustomEvent<{ entryId: string; fieldApiId: string; error: string }>;
 }
 
