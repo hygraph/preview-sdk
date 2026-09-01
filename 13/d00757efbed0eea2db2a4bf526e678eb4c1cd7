@@ -1,0 +1,25 @@
+src/core/ContentUpdater.ts
+  s_f82449d75f580a::t_1f6e6d554197d5 59-61
+src/core/Preview.test.ts
+  s_f82449d75f580a::t_9d64ccb509fc4d 223-240
+src/core/Preview.ts
+  s_f82449d75f580a::t_987f42f374ddd3 372-376
+src/types/index.ts
+  s_f82449d75f580a::t_b4e1640ba16f03 370-371
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "13d00757efbed0eea2db2a4bf526e678eb4c1cd7",
+  "prompts": {},
+  "sessions": {
+    "s_f82449d75f580a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e2b91faa-699f-4b55-aca2-adf796c46982",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Dino Omanovic <dino.omanovic@icloud.com>"
+    }
+  }
+}
