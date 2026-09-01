@@ -220,6 +220,24 @@ describe('Preview', () => {
       expect(updated[0]).toMatchObject({ entryId: 'entry-list-sync', fieldApiId: 'tags', isList: true });
     });
 
+    // Two updates for the same field inside the debounce window leave only the second one to reach
+    // the DOM. The first must stay silent: telling listeners a change was applied when it was
+    // discarded makes them re-render from a value the page never received.
+    it('emits preview:field-updated once when an update is superseded while debouncing', async () => {
+      createPreviewElement({ entryId: 'entry-list-sync', fieldApiId: 'tags', textContent: 'Original' });
+
+      preview = connect({ updateDelay: 30 });
+      const updated = captureEvent('preview:field-updated');
+
+      sendFieldUpdate({ isList: true, newValue: ['first'] } as Partial<FieldUpdate>);
+      sendFieldUpdate({ isList: true, newValue: ['second'] } as Partial<FieldUpdate>);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-hygraph-field-api-id="tags"]')!.textContent).toBe('second');
+      });
+      expect(updated).toHaveLength(1);
+    });
+
     it('emits preview:update-failed instead when no element on the page carries the field', async () => {
       preview = connect();
       const updated = captureEvent('preview:field-updated');

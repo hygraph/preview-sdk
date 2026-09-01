@@ -56,7 +56,9 @@ export class ContentUpdater {
       // Check if this update is still the latest
       const latestUpdate = this.updateQueue.get(updateKey);
       if (latestUpdate !== update) {
-        return { success: true }; // Superseded by newer update
+        // Superseded by a newer update, which will apply itself. Reported separately from a real
+        // update so callers do not announce a change that never reached the DOM.
+        return { success: true, superseded: true };
       }
 
       // Remove from queue

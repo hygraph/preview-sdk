@@ -369,6 +369,11 @@ export class Preview {
       console.log('[Preview] About to call contentUpdater.updateField with:', message);
       const result = await this.contentUpdater.updateField(message);
 
+      // A newer update for the same field replaced this one mid-debounce; that one reports for itself
+      if (result.superseded) {
+        return;
+      }
+
       // The update did not reach the DOM (no tagged element, unsupported value shape, ...), so report
       // the failure rather than telling listeners the preview is in sync with the editor.
       if (!result.success) {

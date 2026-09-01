@@ -367,6 +367,8 @@ export interface UpdateResult {
   success: boolean;
   error?: string;
   element?: HTMLElement;
+  /** True when a newer update for the same field replaced this one while it was being debounced */
+  superseded?: boolean;
 }
 
 // ========== BROWSER GLOBALS ==========
