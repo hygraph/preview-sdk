@@ -312,6 +312,8 @@ export class Preview {
     const capabilities: SDKCapabilities = {
       fieldFocusSync: this.config.sync?.fieldFocus ?? false,  // Default: disabled
       fieldUpdateSync: this.config.sync?.fieldUpdate ?? false, // Default: disabled
+      // Not configurable: it states what this build can handle, not what the consumer wants
+      scalarListSync: true,
       richTextFormatPreferences: this.scanRichTextFormatPreferences() // Scan DOM for format preferences
     };
 
@@ -365,11 +367,36 @@ export class Preview {
       // Use built-in ContentUpdater only when no custom handler is provided
       console.log('[Preview] Using built-in ContentUpdater');
       console.log('[Preview] About to call contentUpdater.updateField with:', message);
-      await this.contentUpdater.updateField(message);
+      const result = await this.contentUpdater.updateField(message);
 
-      // Note: Field updates happen automatically via ContentUpdater
-      // No user-facing events emitted as this is internal behavior
+      // A newer update for the same field replaced this one mid-debounce; that one reports for itself
+      if (result.superseded) {
+        return;
+      }
+
+      // The update did not reach the DOM (no tagged element, unsupported value shape, ...), so report
+      // the failure rather than telling listeners the preview is in sync with the editor.
+      if (!result.success) {
+        this.emitEvent('preview:update-failed', {
+          entryId: message.entryId,
+          fieldApiId: message.fieldApiId,
+          error: result.error || 'Unknown error',
+        });
+        return;
+      }
     }
+
+    // Let listeners react to the change themselves - a component list, say, whose markup the
+    // built-in updater deliberately leaves alone
+    this.emitEvent('preview:field-updated', {
+      entryId: message.entryId,
+      fieldApiId: message.fieldApiId,
+      newValue: message.newValue,
+      transformedValue: message.fieldType === 'COMPONENT_ARRAY' ? message.transformedValue : undefined,
+      componentChain: message.componentChain,
+      isList: message.isList,
+      fieldType: message.fieldType,
+    });
   }
 
   private handleFieldFocus(message: StudioMessage & { type: 'field-focus' }): void {

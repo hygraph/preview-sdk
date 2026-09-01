@@ -51,6 +51,12 @@
 - Value is a JSON string array of `{ fieldApiId, instanceId }` hops (outermost first).
 - Prefer `createPreviewAttributes` and `createComponentChainLink` helpers from `@hygraph/preview-sdk/core` to generate the attributes safely.
 
+#### Scalar list fields
+- An element tagged with only the field api id binds the **whole** list: live updates render every item joined with `, `.
+- Tag one node per item with `data-hygraph-list-index` (or `listIndex` on `createPreviewAttributes`) to have each item patched individually.
+- The built-in updater refuses to write a list into an element that has child elements (a `<ul>` of `<li>` items, say) and reports `preview:update-failed` rather than destroying markup it cannot rebuild.
+- Adding or removing items needs the consumer's own rendering: handle `onFieldUpdate` or the `preview:field-updated` event, both of which carry the raw array.
+
 ### Save Handler Cheat Sheet
 - Next.js App Router: `router.refresh()`.
 ```37:44:examples/nextjs-example/src/components/PreviewWrapper.tsx

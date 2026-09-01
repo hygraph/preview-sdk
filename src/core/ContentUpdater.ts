@@ -56,7 +56,9 @@ export class ContentUpdater {
       // Check if this update is still the latest
       const latestUpdate = this.updateQueue.get(updateKey);
       if (latestUpdate !== update) {
-        return { success: true }; // Superseded by newer update
+        // Superseded by a newer update, which will apply itself. Reported separately from a real
+        // update so callers do not announce a change that never reached the DOM.
+        return { success: true, superseded: true };
       }
 
       // Remove from queue
@@ -197,6 +199,13 @@ export class ContentUpdater {
   }
 
   private async updateElement(element: HTMLElement, update: FieldUpdate): Promise<void> {
+    // Scalar lists render as one joined string per binding, or per item when items are tagged with
+    // their index; consumers wanting anything else get the raw array from onFieldUpdate / the event.
+    if (update.isList) {
+      this.updateListField(element, update.newValue);
+      return;
+    }
+
     switch (update.fieldType) {
       case 'STRING':
       case 'ID':
@@ -266,15 +275,48 @@ export class ContentUpdater {
     }
   }
 
+  private updateListField(element: HTMLElement, values: unknown): void {
+    const items = Array.isArray(values) ? values : [values];
+    const renderItem = (item: unknown) => (item === null || item === undefined ? '' : String(item));
+
+    // Per-item binding: the element renders exactly one item of the list.
+    const listIndex = element.getAttribute('data-hygraph-list-index');
+    if (listIndex !== null) {
+      const index = Number(listIndex);
+      this.setTextValue(element, Number.isInteger(index) ? renderItem(items[index]) : '');
+      return;
+    }
+
+    // Whole-list binding: joining is best effort, and writing into a container (a <ul> of <li> items,
+    // say) would delete children the SDK cannot rebuild - on this update or any later one. Refuse
+    // instead, so the failure surfaces via preview:update-failed and the markup survives.
+    if (!this.isTextValueElement(element) && element.children.length > 0) {
+      throw new Error(
+        `Cannot render list field "${element.getAttribute('data-hygraph-field-api-id')}" into <${element.tagName.toLowerCase()}>: ` +
+          'it has child elements that would be destroyed. Tag each item with data-hygraph-list-index, ' +
+          'or render the list yourself via onFieldUpdate / the preview:field-updated event.'
+      );
+    }
+
+    this.setTextValue(element, items.map(renderItem).join(', '));
+  }
+
+  private isTextValueElement(element: HTMLElement): boolean {
+    return element.tagName === 'INPUT' || element.tagName === 'TEXTAREA';
+  }
+
+  private setTextValue(element: HTMLElement, value: string): void {
+    if (this.isTextValueElement(element)) {
+      (element as HTMLInputElement).value = value;
+    } else {
+      element.textContent = value;
+    }
+  }
+
   private updateTextField(element: HTMLElement, newValue: string): void {
     if (!newValue && newValue !== '') return;
 
-    // Update text content
-    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-      (element as HTMLInputElement).value = newValue;
-    } else {
-      element.textContent = newValue;
-    }
+    this.setTextValue(element, newValue);
   }
 
   private async updateRichTextField(element: HTMLElement, richTextData: RichTextAST | string | RichTextFormats): Promise<void> {

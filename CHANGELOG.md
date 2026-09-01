@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-01
+
+### Added
+- Scalar list field support (`isList` updates): String/ID/Enumeration/Int/Float/Boolean/Date/DateTime lists now
+  update live instead of being withheld by Studio
+- `data-hygraph-list-index` attribute and the `listIndex` option on `createPreviewAttributes`, to have each list item
+  patched individually
+- `scalarListSync` capability in the `ready` message, which is how Studio decides whether list updates are safe to send
+- `preview:field-updated` is now emitted after the built-in updater applies a change, and `preview:update-failed` when
+  it cannot; the update event detail carries `componentChain`, `isList`, `fieldType`, and `transformedValue`
+
+### Changed
+- A whole-list binding renders its items joined with `, `; a binding that has child elements is refused (reported via
+  `preview:update-failed`) rather than having its markup overwritten
+
 ## [1.0.1] - 2025-11-24
 
 ### Documentation
