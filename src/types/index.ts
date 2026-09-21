@@ -246,7 +246,7 @@ export interface PreviewConfig {
   // Studio sync capabilities
   sync?: {
     fieldFocus?: boolean;   // Enable field focus sync from Studio (default: false)
-    fieldUpdate?: boolean;  // Enable field update sync from Studio (default: false)
+    fieldUpdate?: boolean;  // Enable field update sync from Studio (default: true)
   };
 
   // Overlay configuration

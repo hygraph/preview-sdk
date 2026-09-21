@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-21
+
+### Changed
+- `sync.fieldUpdate` now defaults to `true`, so live field sync works without opting in; set it to `false` to keep the
+  save-then-reload flow
+
+### Fixed
+- The field-update path no longer logs to the console unless `debug` is set; these three logs were ungated and are now
+  on by default for every consumer
+
 ## [1.1.0] - 2026-09-01
 
 ### Added
