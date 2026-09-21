@@ -155,6 +155,16 @@ describe('Preview', () => {
         allowedOrigin
       );
 
+    // Live field sync is what consumers expect from click-to-edit, so Studio must hear the capability
+    // without the consumer having to discover the sync option
+    it('announces fieldUpdateSync in the ready message when the consumer sets no sync options', async () => {
+      preview = connect();
+
+      await waitFor(() => {
+        expect(findPostedMessage(bridgeMock, 'ready')?.capabilities?.fieldUpdateSync).toBe(true);
+      });
+    });
+
     // Studio withholds list updates from an SDK that does not announce this, because an SDK without
     // list support writes the array straight into the bound element and destroys container markup
     it('announces scalarListSync in the ready message', async () => {

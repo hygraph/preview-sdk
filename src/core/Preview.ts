@@ -311,7 +311,7 @@ export class Preview {
     // Build capabilities based on config
     const capabilities: SDKCapabilities = {
       fieldFocusSync: this.config.sync?.fieldFocus ?? false,  // Default: disabled
-      fieldUpdateSync: this.config.sync?.fieldUpdate ?? false, // Default: disabled
+      fieldUpdateSync: this.config.sync?.fieldUpdate ?? true, // Default: enabled
       // Not configurable: it states what this build can handle, not what the consumer wants
       scalarListSync: true,
       richTextFormatPreferences: this.scanRichTextFormatPreferences() // Scan DOM for format preferences
@@ -361,12 +361,16 @@ export class Preview {
   private async handleFieldUpdate(message: StudioMessage & { type: 'field-update' }): Promise<void> {
     // Call user's custom handler if provided
     if (this.config.onFieldUpdate) {
-      console.log('[Preview] Using custom onFieldUpdate handler');
+      if (this.config.debug) {
+        console.log('[Preview] Using custom onFieldUpdate handler');
+      }
       this.config.onFieldUpdate(message);
     } else {
       // Use built-in ContentUpdater only when no custom handler is provided
-      console.log('[Preview] Using built-in ContentUpdater');
-      console.log('[Preview] About to call contentUpdater.updateField with:', message);
+      if (this.config.debug) {
+        console.log('[Preview] Using built-in ContentUpdater');
+        console.log('[Preview] About to call contentUpdater.updateField with:', message);
+      }
       const result = await this.contentUpdater.updateField(message);
 
       // A newer update for the same field replaced this one mid-debounce; that one reports for itself

@@ -153,7 +153,7 @@ return (
   - Ensure wrapper only renders on client (dynamic import for Next.js App Router with `ssr: false`, `useEffect` guard for Pages Router).
   - Avoid running `new Preview()` during SSR.
 - Live update expectations:
-  - Field-sync (`sync.fieldUpdate`) is optional; default flow is save event followed by page reload/refresh.
+  - Field-sync (`sync.fieldUpdate`) is on by default; set it to `false` to fall back to the save event followed by page reload/refresh.
   - For rich text, Hygraph sends multiple formats; align DOM with `data-hygraph-rich-text-format`.
 
 ## Framework-Specific Playbooks
